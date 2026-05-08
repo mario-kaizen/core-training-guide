@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRONG HQ Core — Knowledge Base</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1114; --surface: #181b20; --surface-2: #1e2228;
+    --border: #2a2f37; --border-hover: #3a4049;
+    --text: #e1e4e8; --text-muted: #8b929a; --text-dim: #5a6270;
+    --accent: #58a6ff; --accent-dim: #1f4470;
+    --green: #3fb950; --green-dim: #1a3a24;
+    --orange: #d29922; --orange-dim: #3d2e0a;
+    --red: #f85149; --purple: #bc8cff; --cyan: #76e3ea;
+    --font: 'IBM Plex Sans', -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', 'SF Mono', monospace;
+    --radius: 6px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 280px; min-width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); }
+  .sidebar-header h1 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .sidebar-header .title { font-size: 16px; font-weight: 600; color: var(--text); }
+  .sidebar-scroll { flex: 1; overflow-y: auto; }
+  .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+  .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Sidebar sections */
+  .nav-section { border-bottom: 1px solid var(--border); }
+  .nav-header { display: flex; align-items: center; padding: 10px 14px; cursor: pointer; user-select: none; transition: background 0.1s; }
+  .nav-header:hover { background: var(--surface-2); }
+  .nav-header.active { background: var(--accent-dim); }
+  .nav-arrow { width: 14px; height: 14px; flex-shrink: 0; color: var(--text-dim); transition: transform 0.15s; margin-right: 8px; }
+  .nav-arrow svg { width: 10px; height: 10px; }
+  .nav-header.open .nav-arrow { transform: rotate(90deg); }
+  .nav-title { flex: 1; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+  .nav-header.active .nav-title { color: var(--accent); }
+  .nav-badge { font-size: 11px; font-family: var(--mono); color: var(--text-dim); background: var(--surface-2); padding: 0 6px; border-radius: 8px; }
+  .nav-body { display: none; padding-bottom: 4px; }
+  .nav-header.open + .nav-body { display: block; }
+
+  .stat-row { display: flex; gap: 10px; padding: 4px 14px 6px 36px; font-size: 11px; color: var(--text-dim); }
+  .stat-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .stat-dot.pub { background: var(--green); }
+  .stat-dot.draft { background: var(--text-dim); }
+  .stat-item { display: flex; align-items: center; gap: 4px; }
+  .stat-num { font-weight: 600; color: var(--text-muted); font-family: var(--mono); }
+
+  .tree-item { display: flex; align-items: center; padding: 5px 12px 5px calc(12px + var(--depth, 0) * 16px); cursor: pointer; font-size: 13px; color: var(--text-muted); border-left: 2px solid transparent; transition: all 0.1s; gap: 6px; user-select: none; }
+  .tree-item:hover { background: var(--surface-2); color: var(--text); }
+  .tree-item.active { background: var(--accent-dim); color: var(--accent); border-left-color: var(--accent); }
+  .tree-item .arrow { width: 14px; height: 14px; flex-shrink: 0; color: var(--text-dim); transition: transform 0.15s; }
+  .tree-item .arrow svg { width: 10px; height: 10px; }
+  .tree-item.expanded .arrow { transform: rotate(90deg); }
+  .tree-item .label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tree-item .cnt { font-size: 11px; font-family: var(--mono); color: var(--text-dim); background: var(--surface-2); padding: 0 5px; border-radius: 8px; flex-shrink: 0; }
+  .tree-all { padding: 8px 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); cursor: pointer; }
+  .tree-all:hover { color: var(--text); }
+  .tree-all.active { color: var(--accent); }
+  .sb-item { padding: 6px 16px; font-size: 13px; color: var(--text-muted); cursor: pointer; border-left: 2px solid transparent; transition: all 0.1s; }
+  .sb-item:hover { background: var(--surface-2); color: var(--text); }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .search-box { flex: 1; position: relative; }
+  .search-box input { width: 100%; padding: 7px 10px 7px 32px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: var(--font); font-size: 13px; outline: none; }
+  .search-box input:focus { border-color: var(--accent); }
+  .search-box input::placeholder { color: var(--text-dim); }
+  .search-box .si { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-dim); width: 14px; height: 14px; }
+  .pills { display: flex; gap: 4px; }
+  .pill { padding: 5px 10px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text-muted); cursor: pointer; font-family: var(--font); }
+  .pill:hover { border-color: var(--border-hover); color: var(--text); }
+  .pill.on { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .pill.on-g { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+  .pill.on-o { border-color: var(--orange); color: var(--orange); background: var(--orange-dim); }
+  .rc { font-size: 12px; color: var(--text-dim); font-family: var(--mono); white-space: nowrap; }
+
+  /* Content */
+  .content { flex: 1; overflow-y: auto; }
+  .content::-webkit-scrollbar { width: 8px; }
+  .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .fh { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--surface-2); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  .fh .fp { display: flex; align-items: center; gap: 4px; flex: 1; overflow: hidden; }
+  .fh .ps { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fh .sep { color: var(--text-dim); flex-shrink: 0; }
+  .fh .wc { color: var(--text-dim); font-family: var(--mono); flex-shrink: 0; }
+
+  .wr { display: grid; grid-template-columns: 32px 1fr; padding: 12px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .wr:hover { background: var(--surface); }
+  .wr.exp { background: var(--surface); }
+  .ws { display: flex; align-items: flex-start; padding-top: 2px; }
+  .sd { width: 8px; height: 8px; border-radius: 50%; }
+  .sd.published { background: var(--green); box-shadow: 0 0 6px rgba(63,185,80,0.3); }
+  .sd.draft { background: var(--text-dim); }
+  .wi { min-width: 0; }
+  .wn { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+  .wm { display: flex; flex-wrap: wrap; gap: 6px; }
+  .wt { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-family: var(--mono); color: var(--purple); background: rgba(188,140,255,0.08); padding: 1px 6px; border-radius: 3px; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .wt::before { content: "⚡"; font-size: 9px; }
+  .wp { margin-top: 4px; font-size: 12px; color: var(--text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .wd { display: none; grid-column: 1 / -1; margin-top: 10px; padding: 14px 16px; background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); }
+  .wr.exp .wd { display: block; }
+  .ds { margin-bottom: 12px; }
+  .ds:last-child { margin-bottom: 0; }
+  .dl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 6px; }
+  .desc { padding: 10px 14px; background: rgba(88,166,255,0.04); border-left: 3px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; font-size: 13px; line-height: 1.65; color: var(--text); font-weight: 300; }
+  .dt { font-size: 12px; font-family: var(--mono); color: var(--purple); padding: 6px 10px; background: rgba(188,140,255,0.06); border-radius: 4px; border: 1px solid rgba(188,140,255,0.12); }
+  .sl { list-style: none; }
+  .si2 { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; font-size: 12px; }
+  .si2 + .si2 { border-top: 1px solid var(--border); padding-top: 5px; }
+  .sb { flex-shrink: 0; font-size: 10px; font-weight: 600; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; text-transform: uppercase; min-width: 48px; text-align: center; }
+  .sb.ck { background: rgba(118,227,234,0.1); color: var(--cyan); }
+  .sb.em { background: rgba(88,166,255,0.1); color: var(--accent); }
+  .sb.sm { background: rgba(210,153,34,0.1); color: var(--orange); }
+  .sb.tg { background: rgba(63,185,80,0.1); color: var(--green); }
+  .sb.fl { background: rgba(188,140,255,0.1); color: var(--purple); }
+  .sb.op { background: rgba(248,81,73,0.1); color: var(--red); }
+  .sb.wf { background: rgba(88,166,255,0.1); color: var(--accent); }
+  .sb.tk { background: rgba(210,153,34,0.1); color: var(--orange); }
+  .sb.ww { background: rgba(90,98,112,0.1); color: var(--text-dim); }
+  .sb.ot { background: rgba(90,98,112,0.1); color: var(--text-dim); }
+  .slbl { color: var(--text-muted); font-family: var(--mono); font-size: 11.5px; line-height: 1.4; word-break: break-word; }
+  .sbr { color: var(--cyan); font-size: 11px; margin-top: 2px; }
+
+  .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; color: var(--text-dim); gap: 8px; }
+
+  /* Data rows */
+  .dr { padding: 12px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .dr:hover { background: var(--surface); }
+  .dr.exp { background: var(--surface); }
+  .drh { display: flex; align-items: flex-start; gap: 10px; }
+  .drn { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+  .drb { font-size: 10px; font-weight: 600; font-family: var(--mono); padding: 2px 8px; border-radius: 3px; text-transform: uppercase; flex-shrink: 0; }
+  .drv { margin-top: 6px; font-size: 12px; font-family: var(--mono); color: var(--text-muted); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .drd { display: none; margin-top: 10px; padding: 12px; background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); }
+  .dr.exp .drd { display: block; }
+
+  .pc { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .pn { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  .pstages { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .sc { font-size: 11px; font-family: var(--mono); padding: 4px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; color: var(--text-muted); }
+  .sc .sn { color: var(--text-dim); margin-right: 4px; }
+  .sa { color: var(--text-dim); font-size: 14px; }
+
+  .smsbody { font-size: 12px; font-family: var(--mono); color: var(--text-muted); line-height: 1.6; padding: 10px 14px; background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); white-space: pre-wrap; word-break: break-word; }
+
+  /* Table */
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th { position: sticky; top: 0; z-index: 2; background: var(--surface-2); padding: 8px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; }
+  .tbl th:hover { color: var(--text); }
+  .tbl th .sort-arrow { margin-left: 4px; font-size: 10px; color: var(--text-dim); }
+  .tbl th.sorted .sort-arrow { color: var(--accent); }
+  .tbl td { padding: 7px 16px; font-size: 13px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
+  .tbl tr:hover td { background: var(--surface); }
+  .tbl td:first-child { color: var(--text); font-weight: 400; }
+  .tbl td.mono { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+  .tbl .region-badge { font-size: 10px; font-weight: 600; font-family: var(--mono); padding: 2px 8px; border-radius: 3px; text-transform: uppercase; white-space: nowrap; }
+
+  /* Guide */
+  .guide { padding: 24px 32px; max-width: 800px; }
+  .guide h2 { font-size: 18px; font-weight: 600; color: var(--text); margin: 28px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .guide h2:first-child { margin-top: 0; }
+  .guide h3 { font-size: 14px; font-weight: 600; color: var(--accent); margin: 18px 0 8px; }
+  .guide p { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin: 8px 0; }
+  .guide ul { margin: 8px 0; padding-left: 20px; }
+  .guide li { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin: 4px 0; }
+  .guide strong { color: var(--text); font-weight: 500; }
+  .guide code { font-family: var(--mono); font-size: 12px; color: var(--purple); background: rgba(188,140,255,0.08); padding: 1px 5px; border-radius: 3px; }
+
+  @media (max-width: 768px) { .sidebar { display: none; } .toolbar { flex-wrap: wrap; } .guide { padding: 16px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header"><h1>STRONG HQ Core</h1><div class="title">Knowledge Base</div></div>
+    <div class="sidebar-scroll" id="sidebar-scroll"></div>
+  </aside>
+  <main class="main">
+    <div class="toolbar">
+      <div class="search-box"><svg class="si" viewBox="0 0 16 16" fill="currentColor"><path d="M11.5 7a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm-.82 4.74a6 6 0 111.06-1.06l3.04 3.04a.75.75 0 11-1.06 1.06l-3.04-3.04z"/></svg><input type="text" id="search" placeholder="Search... (Cmd+K)" autocomplete="off"></div>
+      <div class="pills" id="pills"></div>
+      <div class="rc" id="rc"></div>
+    </div>
+    <div class="content" id="ct"></div>
+  </main>
+</div>
+<script>
+let D,sec='guide',cf=null,flt='all',sq='',ex=new Set();
+let openSections={guide:true};
+
+// SVG icons for sidebar sections
+const icons={
+  guide:'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M0 1.75A.75.75 0 01.75 1h4.253c1.227 0 2.317.59 3 1.501A3.744 3.744 0 0111.006 1h4.245a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-4.507a2.25 2.25 0 00-1.591.659l-.622.621a.75.75 0 01-1.06 0l-.622-.621A2.25 2.25 0 005.258 13H.75a.75.75 0 01-.75-.75V1.75zm7.251 10.324l.004-5.073-.002-2.253A2.25 2.25 0 005.003 2.5H1.5v9h3.757a3.75 3.75 0 011.994.574zM8.755 4.75l-.004 7.322a3.752 3.752 0 011.992-.572H14.5v-9h-3.495a2.25 2.25 0 00-2.25 2.25z"/></svg>',
+  reports:'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 1.75a.75.75 0 00-1.5 0v12.5c0 .414.336.75.75.75h14.5a.75.75 0 000-1.5H1.5V1.75zm14.28 2.53a.75.75 0 00-1.06-1.06L10 7.94 7.53 5.47a.75.75 0 00-1.06 0L3.22 8.72a.75.75 0 001.06 1.06L7 7.06l2.47 2.47a.75.75 0 001.06 0l5.25-5.25z"/></svg>',
+  clients:'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M10.561 8.073a6.005 6.005 0 013.432 5.142.75.75 0 11-1.498.07 4.5 4.5 0 00-8.99 0 .75.75 0 11-1.498-.07 6.004 6.004 0 013.431-5.142 3.999 3.999 0 115.123 0zM10.5 5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>',
+  payments:'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M10.75 8a.75.75 0 000 1.5h.5a.75.75 0 000-1.5h-.5zM0 4.75A2.75 2.75 0 012.75 2h10.5A2.75 2.75 0 0116 4.75v6.5A2.75 2.75 0 0113.25 14H2.75A2.75 2.75 0 010 11.25v-6.5zm2.75-1.25c-.69 0-1.25.56-1.25 1.25V6h13V4.75c0-.69-.56-1.25-1.25-1.25H2.75zM14.5 7.5h-13v3.75c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25V7.5z"/></svg>',
+  settings:'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8.2 8.2 0 01.701.031C8.549-.009 9.17 0 9.306 0c.147 0 .265.038.362.098l.043.025.154.09a.94.94 0 01.263.317l.689 1.38.063.02a6.04 6.04 0 011.2.557l1.395-.537a1 1 0 01.416-.062c.196.017.372.11.498.26l.05.06a8.017 8.017 0 011.167 2.021l.027.076a1 1 0 01-.104.87l-.726 1.128.009.06a6.004 6.004 0 010 1.266l-.01.062.729 1.13a1 1 0 01.103.87l-.027.075a8.013 8.013 0 01-1.167 2.022l-.05.06a.96.96 0 01-.498.26 1 1 0 01-.416-.063l-1.395-.536-.063.029a6.004 6.004 0 01-1.2.557l-.063.02-.689 1.379a.94.94 0 01-.263.317l-.154.09-.043.025a.87.87 0 01-.362.098c-.136 0-.757.009-.605-.022A8.21 8.21 0 018 16a8.21 8.21 0 01-.701-.031c.152.031-.469.022-.605.022a.87.87 0 01-.362-.098l-.043-.025-.154-.09a.94.94 0 01-.263-.317l-.689-1.38-.063-.02a6.044 6.044 0 01-1.2-.556l-1.395.537a1 1 0 01-.416.062.96.96 0 01-.498-.26l-.05-.06a8.017 8.017 0 01-1.167-2.021l-.027-.076a1 1 0 01.104-.87l.726-1.128-.009-.06a6.004 6.004 0 010-1.266l.01-.062-.729-1.13a1 1 0 01-.103-.87l.027-.075A8.013 8.013 0 012.52 3.472l.05-.06a.96.96 0 01.498-.26 1 1 0 01.416.063l1.395.536.063-.029a6.004 6.004 0 011.2-.557l.063-.02.689-1.379a.94.94 0 01.263-.317l.154-.09.043-.025A.87.87 0 017.694 0c.136 0 .757-.009.605.022zM8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"/></svg>',
+  navigation:'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75A.75.75 0 011.75 2h12.5a.75.75 0 110 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h12.5a.75.75 0 110 1.5H1.75A.75.75 0 011 7.75zM1.75 12a.75.75 0 100 1.5h12.5a.75.75 0 100-1.5H1.75z"/></svg>',
+  sync:'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.002 7.002 0 0114.95 7.16a.75.75 0 11-1.49.178A5.5 5.5 0 008 2.5zM1.705 8.005a.75.75 0 01.834.656 5.5 5.5 0 009.592 2.97l-1.204-1.204a.25.25 0 01.177-.427h3.646a.25.25 0 01.25.25v3.646a.25.25 0 01-.427.177l-1.38-1.38A7.002 7.002 0 011.05 8.84a.75.75 0 01.656-.834z"/></svg>'
+};
+
+function initSidebar(){
+  var sb=document.getElementById('sidebar-scroll');
+  var reportCount=(D.reports&&D.reports.stats)?D.reports.stats.total:0;
+  var syncFields=(D.coreGrowSync&&D.coreGrowSync.fields)?D.coreGrowSync.fields.filter(function(f){return f.name&&f.definition&&!['classpass','account created','migrated'].includes(f.name)&&!f.name.startsWith('List of');}).length:0;
+  var arrow='<svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4"/></svg>';
+  sb.innerHTML=
+    '<div class="nav-section">'+
+      '<div class="nav-header open active" onclick="navClick(\'guide\',this)">'+
+        '<span class="nav-arrow">'+arrow+'</span>'+
+        '<span class="nav-title">Guide</span>'+
+      '</div>'+
+      '<div class="nav-body">'+
+        '<div class="sb-item" onclick="navClick(\'guide\');scrollToGuide(\'what-is-core\')">What is Core?</div>'+
+        '<div class="sb-item" onclick="navClick(\'guide\');scrollToGuide(\'finding-a-contact\')">Finding a Contact</div>'+
+        '<div class="sb-item" onclick="navClick(\'guide\');scrollToGuide(\'sessions-vs-packages\')">Sessions vs Packages</div>'+
+        '<div class="sb-item" onclick="navClick(\'guide\');scrollToGuide(\'reports-similar\')">Reports That Look Similar</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="nav-section">'+
+      '<div class="nav-header" onclick="navClick(\'reports\',this)">'+
+        '<span class="nav-arrow">'+arrow+'</span>'+
+        '<span class="nav-title">Reports</span>'+
+        '<span class="nav-badge">'+reportCount+'</span>'+
+      '</div>'+
+      '<div class="nav-body">'+
+        ((D.reports&&D.reports.categories)?D.reports.categories.map(function(c){
+          return '<div class="sb-item" onclick="navClick(\'reports\');filterReportCat(\''+E(c.name)+'\')">'+E(c.name)+' <span style="color:var(--text-dim);font-size:10px">('+c.count+')</span></div>';
+        }).join(''):'')+
+      '</div>'+
+    '</div>'+
+    '<div class="nav-section">'+
+      '<div class="nav-header" onclick="navClick(\'clients\',this)">'+
+        '<span class="nav-arrow">'+arrow+'</span>'+
+        '<span class="nav-title">Client Management</span>'+
+      '</div>'+
+      '<div class="nav-body">'+
+        '<div class="sb-item" onclick="navClick(\'clients\');scrollToSec(\'cm-search\')">Search Methods</div>'+
+        '<div class="sb-item" onclick="navClick(\'clients\');scrollToSec(\'cm-detail\')">Client Detail</div>'+
+        '<div class="sb-item" onclick="navClick(\'clients\');scrollToSec(\'cm-packages\')">Packages & Sessions</div>'+
+        '<div class="sb-item" onclick="navClick(\'clients\');scrollToSec(\'cm-payments\')">Payment Tabs</div>'+
+        '<div class="sb-item" onclick="navClick(\'clients\');scrollToSec(\'cm-assessments\')">Assessments</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="nav-section">'+
+      '<div class="nav-header" onclick="navClick(\'payments\',this)">'+
+        '<span class="nav-arrow">'+arrow+'</span>'+
+        '<span class="nav-title">Payments & Retail</span>'+
+      '</div>'+
+      '<div class="nav-body">'+
+        '<div class="sb-item" onclick="navClick(\'payments\');scrollToSec(\'pay-dashboard\')">Retail Dashboard</div>'+
+        '<div class="sb-item" onclick="navClick(\'payments\');scrollToSec(\'pay-config\')">Retail Config</div>'+
+        '<div class="sb-item" onclick="navClick(\'payments\');scrollToSec(\'pay-newsale\')">New Sale</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="nav-section">'+
+      '<div class="nav-header" onclick="navClick(\'settings\',this)">'+
+        '<span class="nav-arrow">'+arrow+'</span>'+
+        '<span class="nav-title">Settings & Config</span>'+
+      '</div>'+
+      '<div class="nav-body">'+
+        '<div class="sb-item" onclick="navClick(\'settings\');scrollToSec(\'set-account\')">Account Settings</div>'+
+        '<div class="sb-item" onclick="navClick(\'settings\');scrollToSec(\'set-config\')">Configuration</div>'+
+        '<div class="sb-item" onclick="navClick(\'settings\');scrollToSec(\'set-email\')">Email Templates</div>'+
+        '<div class="sb-item" onclick="navClick(\'settings\');scrollToSec(\'set-team\')">Team Settings</div>'+
+        '<div class="sb-item" onclick="navClick(\'settings\');scrollToSec(\'set-location\')">Location Settings</div>'+
+        '<div class="sb-item" onclick="navClick(\'settings\');scrollToSec(\'set-integrations\')">Integrations</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="nav-section">'+
+      '<div class="nav-header" onclick="navClick(\'navigation\',this)">'+
+        '<span class="nav-arrow">'+arrow+'</span>'+
+        '<span class="nav-title">Navigation</span>'+
+      '</div>'+
+      '<div class="nav-body">'+
+        '<div class="sb-item" onclick="navClick(\'navigation\');scrollToSec(\'nav-routes\')">All Routes</div>'+
+        '<div class="sb-item" onclick="navClick(\'navigation\');scrollToSec(\'nav-switching\')">Account Switching</div>'+
+        '<div class="sb-item" onclick="navClick(\'navigation\');scrollToSec(\'nav-login\')">Login & Credentials</div>'+
+        '<div class="sb-item" onclick="navClick(\'navigation\');scrollToSec(\'nav-dashboard\')">Dashboard</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="nav-section">'+
+      '<div class="nav-header" onclick="navClick(\'sync\',this)">'+
+        '<span class="nav-arrow">'+arrow+'</span>'+
+        '<span class="nav-title">Core &harr; Grow Sync</span>'+
+        '<span class="nav-badge">'+syncFields+'</span>'+
+      '</div>'+
+      '<div class="nav-body">'+
+        '<div class="sb-item" onclick="navClick(\'sync\');scrollToSec(\'sync-fields\')">Field Mappings</div>'+
+        '<div class="sb-item" onclick="navClick(\'sync\');scrollToSec(\'sync-tags\')">Managed Tags</div>'+
+        '<div class="sb-item" onclick="navClick(\'sync\');scrollToSec(\'sync-notes\')">Sync Notes</div>'+
+      '</div>'+
+    '</div>';
+}
+
+var reportCatFilter='';
+function filterReportCat(cat){reportCatFilter=cat;rReports();}
+
+function scrollToSec(id){setTimeout(function(){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'});},50);}
+
+function navClick(section,headerEl){
+  if(headerEl){
+    var wasOpen=headerEl.classList.contains('open');
+    headerEl.classList.toggle('open');
+    if(wasOpen && sec===section) return;
+  }
+  sec=section;
+  ex.clear();
+  var pl=document.getElementById('pills');
+
+  if(section==='reports'){
+    var cats=(D.reports&&D.reports.categories)?D.reports.categories:[];
+    var pillsHtml='<button class="pill '+(reportCatFilter?'':'on')+'" onclick="reportCatFilter=\'\';rReports()">All</button>';
+    cats.forEach(function(c){
+      pillsHtml+='<button class="pill '+(reportCatFilter===c.name?'on':'')+'" onclick="filterReportCat(\''+E(c.name)+'\')">'+E(c.name)+'</button>';
+    });
+    pl.innerHTML=pillsHtml;
+  } else {
+    pl.innerHTML='';
+  }
+
+  document.querySelectorAll('.nav-header').forEach(function(h){h.classList.remove('active');});
+  var headers=document.querySelectorAll('.nav-header');
+  var sectionNames=['guide','reports','clients','payments','settings','navigation','sync'];
+  var idx=sectionNames.indexOf(section);
+  if(idx>=0){
+    headers[idx].classList.add('active');
+    if(!headers[idx].classList.contains('open')) headers[idx].classList.add('open');
+  }
+  rC();
+}
+
+function rC(){
+  if(sec==='guide')rG();
+  else if(sec==='reports')rReports();
+  else if(sec==='clients')rClients();
+  else if(sec==='payments')rPayments();
+  else if(sec==='settings')rSettings();
+  else if(sec==='navigation')rNavigation();
+  else if(sec==='sync')rSync();
+}
+
+// GUIDE
+function rG(){
+  var c=document.getElementById('ct');
+  document.getElementById('rc').textContent='';
+  var html=D.guide||'';
+  var idMap=['what-is-core','finding-a-contact','sessions-vs-packages','reports-similar'];
+  var idx=0;
+  html=html.replace(/<h2>/g,function(){var id=idMap[idx]||'s'+idx;idx++;return'<h2 id="'+id+'">';});
+  c.innerHTML='<div class="guide">'+html+'</div>';
+}
+
+function scrollToGuide(id){setTimeout(function(){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'});},50);}
+
+// REPORTS
+function rReports(){
+  var q=sq.toLowerCase();
+  var cats=(D.reports&&D.reports.categories)?D.reports.categories:[];
+  var c=document.getElementById('ct');
+  var totalShown=0;
+  var html='';
+
+  // URL pattern info
+  if(D.reports&&D.reports.urlPattern){
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface-2)"><div style="font-size:12px;color:var(--text-muted)">URL pattern: <code style="font-family:var(--mono);font-size:11px;color:var(--purple);background:rgba(188,140,255,0.08);padding:1px 5px;border-radius:3px">'+E(D.reports.urlPattern)+'</code></div></div>';
+  }
+
+  cats.forEach(function(cat){
+    if(reportCatFilter && cat.name!==reportCatFilter) return;
+    var reports=cat.reports||[];
+    if(q){
+      reports=reports.filter(function(r){
+        return (r.title+' '+r.filterName+' '+r.description+' '+(r.reportType||'')).toLowerCase().indexOf(q)>=0;
+      });
+    }
+    if(!reports.length) return;
+    totalShown+=reports.length;
+
+    html+='<div style="border-bottom:1px solid var(--border)">';
+    html+='<div class="fh"><div class="fp"><span class="ps">'+E(cat.name)+'</span></div><span class="wc">'+reports.length+'</span></div>';
+
+    reports.forEach(function(r){
+      var id='rpt-'+r.filterName;
+      var x=ex.has(id);
+      var typeBadge='';
+      if(r.reportType && r.reportType!=='clients'){
+        var typeColors={'session':'var(--orange)','pos':'var(--green)','prospects':'var(--cyan)','payroll':'var(--purple)','kpi':'var(--red)','inventory':'var(--accent)'};
+        var tc=typeColors[r.reportType]||'var(--text-dim)';
+        typeBadge='<span class="drb" style="background:rgba(90,98,112,.08);color:'+tc+'">'+E(r.reportType).toUpperCase()+'</span>';
+      }
+
+      html+='<div class="dr'+(x?' exp':'')+'" onclick="tog(\''+E(id)+'\')">';
+      html+='<div class="drh"><div class="drn">'+E(r.title)+'</div>'+typeBadge+'</div>';
+      html+='<div style="margin-top:4px"><span style="font-size:11px;font-family:var(--mono);color:var(--purple);background:rgba(188,140,255,0.08);padding:1px 6px;border-radius:3px">'+E(r.filterName)+'</span></div>';
+      if(r.description){
+        html+='<div style="margin-top:4px;font-size:12px;color:var(--text-muted);line-height:1.5">'+E(r.description)+'</div>';
+      }
+      if(x){
+        html+='<div class="drd">';
+        html+='<div class="dl">Filter Name</div>';
+        html+='<div class="dt">'+E(r.filterName)+'</div>';
+        if(r.reportType){
+          html+='<div style="margin-top:8px"><div class="dl">Report Type</div><div style="font-size:12px;color:var(--text-muted)">'+E(r.reportType)+'</div></div>';
+        }
+        html+='</div>';
+      }
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+
+  // Favourite reports
+  if(!reportCatFilter && !q && D.reports && D.reports.favouriteReports){
+    html+='<div style="padding:16px 20px;border-top:1px solid var(--border)"><div class="dl">Frequently Used Reports</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
+    D.reports.favouriteReports.forEach(function(r){
+      html+='<span class="sc">'+E(r)+'</span>';
+    });
+    html+='</div></div>';
+  }
+
+  // Status filters reference
+  if(!reportCatFilter && !q && D.reports && D.reports.statusFilters){
+    html+='<div style="padding:16px 20px;border-top:1px solid var(--border)">';
+    html+='<div class="dl">Status Filter Reference</div>';
+    var sf=D.reports.statusFilters;
+    ['membership','client','payment','paymentStatus','revenueType'].forEach(function(k){
+      if(!sf[k]) return;
+      html+='<div style="margin-top:8px"><span style="font-size:11px;font-weight:600;color:var(--text);text-transform:capitalize">'+k.replace(/([A-Z])/g,' $1')+'</span><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">';
+      sf[k].forEach(function(v){
+        html+='<span class="sc">'+E(v)+'</span>';
+      });
+      html+='</div></div>';
+    });
+    html+='</div>';
+  }
+
+  document.getElementById('rc').textContent=totalShown+' report'+(totalShown!==1?'s':'');
+  c.innerHTML=html||'<div class="empty"><div style="font-size:32px;opacity:.3">&#128202;</div><div>No reports found</div></div>';
+}
+
+// CLIENT MANAGEMENT
+function rClients(){
+  var cm=D.clientManagement;
+  if(!cm){document.getElementById('ct').innerHTML='<div class="empty"><div>No client management data</div></div>';return;}
+  var c=document.getElementById('ct');
+  document.getElementById('rc').textContent='';
+  var html='';
+
+  // Search Methods
+  html+='<div id="cm-search" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Search Methods</span></div><span class="wc">'+(cm.searchMethods?cm.searchMethods.length:0)+'</span></div>';
+  if(cm.searchMethods){
+    cm.searchMethods.forEach(function(m){
+      var id='cm-s-'+E(m.name);
+      var x=ex.has(id);
+      html+='<div class="dr'+(x?' exp':'')+'" onclick="tog(\''+id+'\')">';
+      html+='<div class="drh"><div class="drn">'+E(m.name)+'</div>';
+      if(m.selector){html+='<span style="font-size:11px;font-family:var(--mono);color:var(--purple);background:rgba(188,140,255,0.08);padding:1px 6px;border-radius:3px">'+E(m.selector)+'</span>';}
+      html+='</div>';
+      html+='<div style="margin-top:4px;font-size:12px;color:var(--text-muted);line-height:1.5">'+E(m.description)+'</div>';
+      html+='</div>';
+    });
+  }
+  html+='</div>';
+
+  // Status Filters
+  if(cm.statusFilters){
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Client Status Filters</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
+    cm.statusFilters.forEach(function(s){html+='<span class="sc">'+E(s)+'</span>';});
+    html+='</div></div>';
+  }
+
+  // Client Detail
+  html+='<div id="cm-detail" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Client Detail</span><span class="sep">&rsaquo;</span><span class="ps">Profile Sidebar</span></div><span class="wc">'+(cm.clientDetail&&cm.clientDetail.profileSidebar?cm.clientDetail.profileSidebar.length:0)+'</span></div>';
+  if(cm.clientDetail&&cm.clientDetail.profileSidebar){
+    cm.clientDetail.profileSidebar.forEach(function(f){
+      html+='<div class="dr"><div class="drh"><div class="drn">'+E(f.field)+'</div></div><div style="margin-top:2px;font-size:12px;color:var(--text-muted)">'+E(f.description)+'</div></div>';
+    });
+  }
+  html+='</div>';
+
+  // Profile Form Fields
+  if(cm.clientDetail&&cm.clientDetail.profileFormFields){
+    var id='cm-form-fields';
+    var x=ex.has(id);
+    html+='<div class="dr'+(x?' exp':'')+'" onclick="tog(\''+id+'\')">';
+    html+='<div class="drh"><div class="drn">Profile Form Fields</div><span class="drb" style="background:rgba(90,98,112,.1);color:var(--text-dim)">'+cm.clientDetail.profileFormFields.length+' FIELDS</span></div>';
+    if(x){
+      html+='<div class="drd"><table class="tbl"><thead><tr><th>Field</th><th>Type</th></tr></thead><tbody>';
+      cm.clientDetail.profileFormFields.forEach(function(f){
+        html+='<tr><td>'+E(f.field)+'</td><td class="mono">'+E(f.type)+'</td></tr>';
+      });
+      html+='</tbody></table></div>';
+    }
+    html+='</div>';
+  }
+
+  // Packages & Sessions
+  html+='<div id="cm-packages" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Packages & Sessions</span></div></div>';
+
+  if(cm.clientDetail&&cm.clientDetail.packageManagement){
+    var pm=cm.clientDetail.packageManagement;
+    // Show Visits
+    html+='<div class="dr"><div class="drh"><div class="drn">Show Visits</div><span style="font-size:11px;font-family:var(--mono);color:var(--purple);background:rgba(188,140,255,0.08);padding:1px 6px;border-radius:3px">'+E(pm.showVisitsSelector)+'</span></div><div style="margin-top:4px;font-size:12px;color:var(--text-muted);line-height:1.5">'+E(pm.showVisits)+'</div></div>';
+    // View History
+    html+='<div class="dr"><div class="drh"><div class="drn">View History</div><span style="font-size:11px;font-family:var(--mono);color:var(--purple);background:rgba(188,140,255,0.08);padding:1px 6px;border-radius:3px">'+E(pm.viewHistorySelector)+'</span></div><div style="margin-top:4px;font-size:12px;color:var(--text-muted);line-height:1.5">'+E(pm.viewHistory)+'</div></div>';
+    // Toggles
+    html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">Package Toggles</div><div style="display:flex;gap:6px;margin-top:4px">';
+    pm.toggles.forEach(function(t){html+='<span class="sc">'+E(t)+'</span>';});
+    html+='</div></div>';
+    // Package fields
+    var pfId='cm-pkg-fields';
+    var pfx=ex.has(pfId);
+    html+='<div class="dr'+(pfx?' exp':'')+'" onclick="tog(\''+pfId+'\')">';
+    html+='<div class="drh"><div class="drn">Package Fields</div><span class="drb" style="background:rgba(90,98,112,.1);color:var(--text-dim)">'+pm.packageFields.length+'</span></div>';
+    if(pfx){
+      html+='<div class="drd"><ul class="sl">';
+      pm.packageFields.forEach(function(f){html+='<li class="si2"><span class="slbl">'+E(f)+'</span></li>';});
+      html+='</ul></div>';
+    }
+    html+='</div>';
+  }
+
+  // Session views
+  if(cm.clientDetail&&cm.clientDetail.sessionViews){
+    html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">Session View Options <span style="font-family:var(--mono);color:var(--purple);font-size:10px">'+E(cm.clientDetail.sessionViewSelector||'')+'</span></div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+    cm.clientDetail.sessionViews.forEach(function(v){html+='<span class="sc">'+E(v)+'</span>';});
+    html+='</div>';
+    if(cm.clientDetail.sessionFilterButtonNote){
+      html+='<div style="margin-top:6px;font-size:11px;color:var(--orange)">&#9888; '+E(cm.clientDetail.sessionFilterButtonNote)+'</div>';
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+
+  // Payment Tabs
+  html+='<div id="cm-payments" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Payment Tabs</span></div><span class="wc">'+(cm.clientDetail&&cm.clientDetail.paymentTabs?cm.clientDetail.paymentTabs.length:0)+'</span></div>';
+  if(cm.clientDetail&&cm.clientDetail.paymentTabs){
+    cm.clientDetail.paymentTabs.forEach(function(t){
+      html+='<div class="dr"><div class="drh"><div class="drn">'+E(t.name)+'</div></div><div style="margin-top:2px;font-size:12px;color:var(--text-muted)">'+E(t.description)+'</div></div>';
+    });
+  }
+  html+='</div>';
+
+  // Client Actions
+  if(cm.clientDetail&&cm.clientDetail.clientActions){
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Client Actions</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
+    cm.clientDetail.clientActions.forEach(function(a){html+='<span class="sc">'+E(a)+'</span>';});
+    html+='</div></div>';
+  }
+
+  // Assessments
+  html+='<div id="cm-assessments" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Assessments</span></div><span class="wc">'+(cm.clientDetail&&cm.clientDetail.assessmentTypes?cm.clientDetail.assessmentTypes.length:0)+'</span></div>';
+  if(cm.clientDetail&&cm.clientDetail.assessmentTypes){
+    cm.clientDetail.assessmentTypes.forEach(function(a){
+      html+='<div class="dr"><div class="drh"><div class="drn">'+E(a.name)+'</div></div>';
+      if(a.details){html+='<div style="margin-top:2px;font-size:12px;color:var(--text-muted)">'+E(a.details)+'</div>';}
+      html+='</div>';
+    });
+  }
+  if(cm.clientDetail&&cm.clientDetail.assessmentSettings){
+    html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">Assessment Settings</div><ul style="list-style:none;margin-top:4px">';
+    cm.clientDetail.assessmentSettings.forEach(function(s){
+      html+='<li style="font-size:12px;color:var(--text-muted);padding:2px 0">'+E(s)+'</li>';
+    });
+    html+='</ul></div>';
+  }
+  html+='</div>';
+
+  c.innerHTML=html;
+}
+
+// PAYMENTS & RETAIL
+function rPayments(){
+  var pay=D.payments;
+  if(!pay){document.getElementById('ct').innerHTML='<div class="empty"><div>No payments data</div></div>';return;}
+  var c=document.getElementById('ct');
+  document.getElementById('rc').textContent='';
+  var html='';
+
+  // Retail Dashboard
+  if(pay.retailDashboard){
+    var rd=pay.retailDashboard;
+    html+='<div id="pay-dashboard" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Retail Dashboard</span></div></div>';
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(rd.url)+'</div></div>';
+
+    // Sub-tabs
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Sub-tabs</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+    rd.subTabs.forEach(function(t){html+='<span class="sc">'+E(t)+'</span>';});
+    html+='</div></div>';
+
+    // Revenue widgets
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Revenue Widgets</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+    rd.revenueWidgets.forEach(function(w){html+='<span class="sc">'+E(w)+'</span>';});
+    html+='</div></div>';
+
+    // History tabs
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">History Tabs</div>';
+    rd.historyTabs.forEach(function(t){
+      html+='<div class="dr"><div class="drh"><div class="drn">'+E(t.name)+'</div></div><div style="margin-top:2px;font-size:12px;color:var(--text-muted)">'+E(t.columns)+'</div></div>';
+    });
+    html+='</div>';
+
+    if(rd.liveRetailStream){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">Live Retail Stream</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">'+E(rd.liveRetailStream)+'</div></div>';
+    }
+    html+='</div>';
+  }
+
+  // Retail Config
+  if(pay.retailConfig){
+    var rc2=pay.retailConfig;
+    html+='<div id="pay-config" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Retail Configurations</span></div></div>';
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(rc2.url)+'</div></div>';
+
+    // Sub-tabs
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Sub-tabs</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+    rc2.subTabs.forEach(function(t){html+='<span class="sc">'+E(t)+'</span>';});
+    html+='</div></div>';
+
+    // Package columns
+    if(rc2.packageListColumns){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Package List Columns</div><ul style="list-style:none;margin-top:4px">';
+      rc2.packageListColumns.forEach(function(col){
+        html+='<li style="font-size:12px;color:var(--text-muted);padding:2px 0">'+E(col)+'</li>';
+      });
+      html+='</ul></div>';
+    }
+
+    // Sold Online toggle warning
+    if(rc2.soldOnlineToggle){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(210,153,34,0.04)"><div class="dl" style="color:var(--orange)">Sold Online Toggle Warning</div><div style="font-size:12px;color:var(--orange);margin-top:4px;line-height:1.6">&#9888; '+E(rc2.soldOnlineToggle.warning)+'</div><div style="margin-top:6px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">ON: <span style="color:var(--green)">'+E(rc2.soldOnlineToggle.onState)+'</span> | OFF: <span style="color:var(--red)">'+E(rc2.soldOnlineToggle.offState)+'</span></div></div>';
+    }
+    html+='</div>';
+  }
+
+  // New Sale
+  if(pay.newSale){
+    var ns=pay.newSale;
+    html+='<div id="pay-newsale" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">New Sale</span></div><span class="wc">'+(ns.saleTypes?ns.saleTypes.length:0)+'</span></div>';
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(ns.url)+'</div></div>';
+    if(ns.saleTypes){
+      ns.saleTypes.forEach(function(t){
+        html+='<div class="dr"><div class="drh"><div class="drn">'+E(t)+'</div></div></div>';
+      });
+    }
+    if(ns.notes){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)">'+E(ns.notes)+'</div>';
+    }
+    html+='</div>';
+  }
+
+  c.innerHTML=html;
+}
+
+// SETTINGS & CONFIG
+function rSettings(){
+  var sett=D.settings;
+  if(!sett){document.getElementById('ct').innerHTML='<div class="empty"><div>No settings data</div></div>';return;}
+  var c=document.getElementById('ct');
+  document.getElementById('rc').textContent='';
+  var html='';
+
+  // Account Settings
+  if(sett.accountSettings){
+    var as=sett.accountSettings;
+    html+='<div id="set-account" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Account Settings</span></div><span class="wc">'+(as.tabs?as.tabs.length:0)+' tabs</span></div>';
+    if(as.url){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(as.url)+'</div></div>';
+    }
+    if(as.tabs){
+      as.tabs.forEach(function(tab){
+        var id='set-tab-'+E(tab.name);
+        var x=ex.has(id);
+        html+='<div class="dr'+(x?' exp':'')+'" onclick="tog(\''+id+'\')">';
+        html+='<div class="drh"><div class="drn">'+E(tab.name)+'</div><span style="font-size:11px;font-family:var(--mono);color:var(--purple);background:rgba(188,140,255,0.08);padding:1px 6px;border-radius:3px">'+E(tab.route)+'</span></div>';
+        if(tab.description){html+='<div style="margin-top:4px;font-size:12px;color:var(--text-muted);line-height:1.5">'+E(tab.description)+'</div>';}
+        if(x && tab.fields){
+          html+='<div class="drd"><ul class="sl">';
+          tab.fields.forEach(function(f){html+='<li class="si2"><span class="slbl">'+E(f)+'</span></li>';});
+          html+='</ul></div>';
+        }
+        html+='</div>';
+      });
+    }
+    html+='</div>';
+  }
+
+  // Configuration
+  if(sett.configuration&&sett.configuration.sections){
+    html+='<div id="set-config" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Configuration</span></div><span class="wc">'+sett.configuration.sections.length+' sections</span></div>';
+    sett.configuration.sections.forEach(function(sec2){
+      var id='set-cfg-'+E(sec2.name);
+      var x=ex.has(id);
+      html+='<div class="dr'+(x?' exp':'')+'" onclick="tog(\''+id+'\')">';
+      html+='<div class="drh"><div class="drn">'+E(sec2.name)+'</div><span class="drb" style="background:rgba(90,98,112,.1);color:var(--text-dim)">'+sec2.settings.length+'</span></div>';
+      if(x){
+        html+='<div class="drd"><ul class="sl">';
+        sec2.settings.forEach(function(s){html+='<li class="si2"><span class="slbl">'+E(s)+'</span></li>';});
+        html+='</ul></div>';
+      }
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  // Email Templates
+  if(sett.emailTemplates){
+    var et=sett.emailTemplates;
+    html+='<div id="set-email" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Email Templates</span></div><span class="wc">'+(et.totalCount||'')+'</span></div>';
+    if(et.categories){
+      et.categories.forEach(function(cat){
+        var id='set-et-'+E(cat.name);
+        var x=ex.has(id);
+        html+='<div class="dr'+(x?' exp':'')+'" onclick="tog(\''+id+'\')">';
+        html+='<div class="drh"><div class="drn">'+E(cat.name)+'</div><span class="drb" style="background:rgba(88,166,255,.1);color:var(--accent)">'+cat.templates.length+'</span></div>';
+        if(x){
+          html+='<div class="drd"><ul class="sl">';
+          cat.templates.forEach(function(t){html+='<li class="si2"><span class="slbl">'+E(t)+'</span></li>';});
+          html+='</ul></div>';
+        }
+        html+='</div>';
+      });
+    }
+    html+='</div>';
+  }
+
+  // Team Settings
+  if(sett.teamSettings){
+    var ts=sett.teamSettings;
+    html+='<div id="set-team" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Team Settings</span></div></div>';
+    if(ts.url){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(ts.url)+'</div></div>';
+    }
+    // Account types
+    if(ts.accountTypes){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">Account Types</div>';
+      ts.accountTypes.forEach(function(at){
+        html+='<div class="dr"><div class="drh"><div class="drn">'+E(at.type)+'</div></div><div style="margin-top:2px;font-size:12px;color:var(--text-muted)">'+E(at.description)+'</div></div>';
+      });
+      html+='</div>';
+    }
+    // Groups
+    if(ts.groups){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">Groups</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+      ts.groups.forEach(function(g){html+='<span class="sc">'+E(g)+'</span>';});
+      html+='</div></div>';
+    }
+    html+='</div>';
+  }
+
+  // Location Settings
+  if(sett.locationSettings){
+    var ls=sett.locationSettings;
+    html+='<div id="set-location" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Location Settings</span></div><span class="wc">'+(ls.sections?ls.sections.length:0)+' sections</span></div>';
+    if(ls.url){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(ls.url)+'</div></div>';
+    }
+    if(ls.sections){
+      ls.sections.forEach(function(s2){
+        html+='<div class="dr"><div class="drh"><div class="drn">'+E(s2.name)+'</div></div><div style="margin-top:2px;font-size:12px;color:var(--text-muted)">'+E(s2.description)+'</div></div>';
+      });
+    }
+    html+='</div>';
+  }
+
+  // Integrations
+  if(sett.integrations){
+    html+='<div id="set-integrations" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Integrations</span></div><span class="wc">'+sett.integrations.length+'</span></div>';
+    // Group by category
+    var catMap={};
+    sett.integrations.forEach(function(ig){
+      var k=ig.category||'Other';
+      if(!catMap[k])catMap[k]=[];
+      catMap[k].push(ig);
+    });
+    Object.keys(catMap).forEach(function(k){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">'+E(k)+'</div>';
+      catMap[k].forEach(function(ig){
+        html+='<div class="dr"><div class="drh"><div class="drn">'+E(ig.name)+'</div><span class="drb" style="background:rgba(90,98,112,.08);color:var(--text-dim)">'+E(ig.category)+'</span></div>';
+        if(ig.notes){html+='<div style="margin-top:2px;font-size:12px;color:var(--text-muted)">'+E(ig.notes)+'</div>';}
+        html+='</div>';
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  c.innerHTML=html;
+}
+
+// NAVIGATION
+var navSortCol='route';
+var navSortDir=1;
+var navCatFilter='';
+function sortNav(col){
+  if(navSortCol===col){navSortDir*=-1;}else{navSortCol=col;navSortDir=1;}
+  rNavigation();
+}
+function filterNavCat(cat){navCatFilter=cat;rNavigation();}
+
+function rNavigation(){
+  var nav=D.navigation;
+  if(!nav){document.getElementById('ct').innerHTML='<div class="empty"><div>No navigation data</div></div>';return;}
+  var c=document.getElementById('ct');
+  var pl=document.getElementById('pills');
+  var html='';
+
+  // Routes table
+  if(nav.routes){
+    var routes=nav.routes.slice();
+    var q=sq.toLowerCase();
+    if(q){
+      routes=routes.filter(function(r){
+        return (r.route+' '+r.page+' '+r.category).toLowerCase().indexOf(q)>=0;
+      });
+    }
+
+    // Category pills
+    var cats={};
+    nav.routes.forEach(function(r){cats[r.category]=true;});
+    var catList=Object.keys(cats).sort();
+    var pillsHtml='<button class="pill '+(navCatFilter?'':'on')+'" onclick="navCatFilter=\'\';rNavigation()">All</button>';
+    catList.forEach(function(cat){
+      pillsHtml+='<button class="pill '+(navCatFilter===cat?'on':'')+'" onclick="filterNavCat(\''+E(cat)+'\')">'+E(cat)+'</button>';
+    });
+    pl.innerHTML=pillsHtml;
+
+    if(navCatFilter){
+      routes=routes.filter(function(r){return r.category===navCatFilter;});
+    }
+
+    // Sort
+    routes.sort(function(a,b){
+      var va=a[navSortCol]||'';
+      var vb=b[navSortCol]||'';
+      return va.localeCompare(vb)*navSortDir;
+    });
+
+    document.getElementById('rc').textContent=routes.length+' route'+(routes.length!==1?'s':'');
+
+    html+='<div id="nav-routes">';
+    function thArrow(col,label){
+      var cls=navSortCol===col?' sorted':'';
+      var arrow=navSortCol===col?(navSortDir===1?'↑':'↓'):'↕';
+      return '<th class="'+cls+'" onclick="sortNav(\''+col+'\')">'+label+'<span class="sort-arrow">'+arrow+'</span></th>';
+    }
+    html+='<table class="tbl"><thead><tr>';
+    html+=thArrow('route','Route');
+    html+=thArrow('page','Page');
+    html+=thArrow('category','Category');
+    html+='</tr></thead><tbody>';
+
+    var catColors2={'Core Pages':'rgba(63,185,80,0.12);color:var(--green)','Settings/Profile Pages':'rgba(188,140,255,0.12);color:var(--purple)','Messaging/Notifications':'rgba(88,166,255,0.12);color:var(--accent)','Other':'rgba(90,98,112,0.1);color:var(--text-dim)'};
+
+    routes.forEach(function(r){
+      var rStyle=catColors2[r.category]||'rgba(90,98,112,0.1);color:var(--text-dim)';
+      html+='<tr>';
+      html+='<td class="mono">'+E(r.route)+'</td>';
+      html+='<td>'+E(r.page)+'</td>';
+      html+='<td><span class="region-badge" style="background:'+rStyle+'">'+E(r.category)+'</span></td>';
+      html+='</tr>';
+    });
+    html+='</tbody></table></div>';
+  }
+
+  // Account Switching
+  if(nav.accountSwitching){
+    var as2=nav.accountSwitching;
+    html+='<div id="nav-switching" style="border-top:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Account Switching</span></div></div>';
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Endpoint</div><div class="dt">'+E(as2.endpoint)+'</div></div>';
+    if(as2.warning){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(248,81,73,0.04)"><div class="dl" style="color:var(--red)">Warning</div><div style="font-size:12px;color:var(--red);line-height:1.6">&#9888; '+E(as2.warning)+'</div></div>';
+    }
+    if(as2.resetCookies){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Reset Cookies</div><div style="font-size:12px;color:var(--text-muted);line-height:1.6">'+E(as2.resetCookies)+'</div></div>';
+    }
+    if(as2.resetScript){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Reset Script</div><div class="smsbody">'+E(as2.resetScript)+'</div></div>';
+    }
+    html+='</div>';
+  }
+
+  // Login
+  if(nav.login){
+    var lg=nav.login;
+    html+='<div id="nav-login" style="border-top:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Login & Credentials</span></div></div>';
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(lg.url)+'</div></div>';
+    if(lg.envVars){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Environment Variables</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+      lg.envVars.forEach(function(v){html+='<span style="font-size:11px;font-family:var(--mono);color:var(--purple);background:rgba(188,140,255,0.08);padding:2px 8px;border-radius:3px">'+E(v)+'</span>';});
+      html+='</div></div>';
+    }
+    if(lg.accountCount){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)">'+lg.accountCount+' accounts available</div>';
+    }
+    html+='</div>';
+  }
+
+  // Dashboard
+  if(nav.dashboard){
+    var db=nav.dashboard;
+    html+='<div id="nav-dashboard" style="border-top:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Dashboard</span></div></div>';
+    if(db.widgets){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Widgets</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+      db.widgets.forEach(function(w){html+='<span class="sc">'+E(w)+'</span>';});
+      html+='</div></div>';
+    }
+    // Active clients widget detail
+    if(db.activeClientsWidget){
+      var acId='nav-db-ac';
+      var acx=ex.has(acId);
+      html+='<div class="dr'+(acx?' exp':'')+'" onclick="tog(\''+acId+'\')">';
+      html+='<div class="drh"><div class="drn">Active Clients Widget</div></div>';
+      if(acx){
+        html+='<div class="drd"><ul class="sl">';
+        db.activeClientsWidget.forEach(function(w){html+='<li class="si2"><span class="slbl">'+E(w)+'</span></li>';});
+        html+='</ul></div>';
+      }
+      html+='</div>';
+    }
+    // Intro offers widget
+    if(db.introOffersWidget){
+      var ioId='nav-db-io';
+      var iox=ex.has(ioId);
+      html+='<div class="dr'+(iox?' exp':'')+'" onclick="tog(\''+ioId+'\')">';
+      html+='<div class="drh"><div class="drn">Intro Offers Widget</div></div>';
+      if(iox){
+        html+='<div class="drd"><ul class="sl">';
+        db.introOffersWidget.forEach(function(w){html+='<li class="si2"><span class="slbl">'+E(w)+'</span></li>';});
+        html+='</ul></div>';
+      }
+      html+='</div>';
+    }
+    // Booked utilization
+    if(db.bookedUtilizationWidget){
+      var buId='nav-db-bu';
+      var bux=ex.has(buId);
+      html+='<div class="dr'+(bux?' exp':'')+'" onclick="tog(\''+buId+'\')">';
+      html+='<div class="drh"><div class="drn">Booked Utilization Widget</div></div>';
+      if(bux){
+        html+='<div class="drd"><ul class="sl">';
+        db.bookedUtilizationWidget.forEach(function(w){html+='<li class="si2"><span class="slbl">'+E(w)+'</span></li>';});
+        html+='</ul></div>';
+      }
+      html+='</div>';
+    }
+    if(db.notes){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border);font-size:12px;color:var(--orange)">&#9888; '+E(db.notes)+'</div>';
+    }
+    html+='</div>';
+  }
+
+  // Schedule info
+  if(nav.schedule){
+    var sch=nav.schedule;
+    html+='<div style="border-top:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Schedule</span></div></div>';
+    if(sch.views){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Views</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+      sch.views.forEach(function(v){html+='<span class="sc">'+E(v)+'</span>';});
+      html+='</div></div>';
+    }
+    if(sch.classTypes){
+      html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">Class Types</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+      sch.classTypes.forEach(function(ct2){html+='<span class="sc">'+E(ct2)+'</span>';});
+      html+='</div></div>';
+    }
+    if(sch.classEntry){
+      html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">Class Entry Format</div><div class="smsbody">'+E(sch.classEntry)+'</div></div>';
+    }
+    html+='</div>';
+  }
+
+  c.innerHTML=html;
+}
+
+// CORE-GROW SYNC
+function rSync(){
+  var sync=D.coreGrowSync;
+  if(!sync){document.getElementById('ct').innerHTML='<div class="empty"><div>No sync data</div></div>';return;}
+  var c=document.getElementById('ct');
+  var q=sq.toLowerCase();
+  var html='';
+
+  // Direction
+  html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface-2)"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;color:var(--accent);font-weight:600">'+E(sync.direction||'Core to Grow (one-directional)')+'</span></div></div>';
+
+  // Sync notes
+  if(sync.syncNotes){
+    html+='<div id="sync-notes" style="padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(210,153,34,0.04)"><div style="font-size:12px;color:var(--orange);font-weight:500;line-height:1.6">&#9888; '+E(sync.syncNotes)+'</div></div>';
+  }
+
+  // Managed Tags
+  if(sync.managedTags){
+    html+='<div id="sync-tags" style="padding:16px 20px;border-bottom:1px solid var(--border)"><div class="dl">Tags Managed by grow-sync</div><div style="display:flex;gap:6px;margin-top:6px">';
+    sync.managedTags.forEach(function(t){html+='<span class="sc">'+E(t)+'</span>';});
+    html+='</div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">All other tags in Grow are safe — grow-sync won\'t touch them.</div></div>';
+  }
+
+  // Field Mappings
+  var fields=(sync.fields||[]).filter(function(f){
+    return f.name&&f.definition&&!['classpass','account created','migrated'].includes(f.name)&&!f.name.startsWith('List of');
+  });
+  if(q){
+    fields=fields.filter(function(f){
+      return (f.name+' '+(f.customField||'')+' '+f.definition+' '+(f.observations||'')).toLowerCase().indexOf(q)>=0;
+    });
+  }
+
+  document.getElementById('rc').textContent=fields.length+' field'+(fields.length!==1?'s':'');
+
+  html+='<div id="sync-fields">';
+  fields.forEach(function(f){
+    var x=ex.has(f.name);
+    var badge=f.synced?'<span class="drb" style="background:rgba(63,185,80,.1);color:var(--green)">SYNCED</span>':'<span class="drb" style="background:rgba(90,98,112,.1);color:var(--text-dim)">STANDARD</span>';
+    var cfName=f.customField?'<span style="font-size:11px;font-family:var(--mono);color:var(--purple);margin-left:8px">'+E(f.customField)+'</span>':'';
+    html+='<div class="dr'+(x?' exp':'')+'" onclick="tog(\''+E(f.name)+'\')">';
+    html+='<div class="drh"><div class="drn">'+E(f.name)+cfName+'</div>'+badge+'</div>';
+    html+='<div style="margin-top:4px;font-size:12px;color:var(--text-muted);line-height:1.5">'+E(f.definition)+'</div>';
+    if(x&&f.observations){
+      html+='<div class="drd"><div class="dl">Details & Edge Cases</div><div style="font-size:12px;color:var(--text-muted);font-family:var(--mono);line-height:1.7;white-space:pre-wrap">'+E(f.observations)+'</div></div>';
+    }
+    html+='</div>';
+  });
+  html+='</div>';
+
+  c.innerHTML=html;
+}
+
+function tog(id){ex.has(id)?ex.delete(id):ex.add(id);rC();}
+function E(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+var si3=document.getElementById('search');var stt;
+si3.addEventListener('input',function(){clearTimeout(stt);stt=setTimeout(function(){sq=si3.value.trim();ex.clear();rC();},200);});
+document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();si3.focus();si3.select();}if(e.key==='Escape'){si3.blur();si3.value='';sq='';rC();}});
+
+var D_RAW=__DATA_PLACEHOLDER__;
+D=D_RAW;
+initSidebar();rC();
+</script>
+</body>
+</html>
