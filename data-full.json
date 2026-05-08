@@ -1,0 +1,2360 @@
+{
+  "guide": "<h2>What is Core?</h2>\n\n<p>Hapana Core (<code>core.hapana.com</code>) is the member management platform used by STRONG Pilates. It handles client records, session scheduling, package and membership management, payments, and reporting across all 142 STRONG locations. After logging in, Core presents an Account Picker \u2014 select a location to load that studio's dashboard.</p>\n\n<p><strong>Read-only principle:</strong> We never edit, create, or update contacts directly in Core. Core is the source of truth; changes flow one-way into Grow via the Core-to-Grow sync.</p>\n\n<p><strong>Client IDs are base64-encoded.</strong> The numeric ID (e.g., <code>3076262</code>) is encoded as <code>MzA3NjI2Mg==</code> in URLs. You can decode with <code>echo 'MzA3NjI2Mg==' | base64 -d</code>.</p>\n\n<hr>\n\n<h2>Finding a Contact</h2>\n\n<p>The Clients page is at <code>/index.php?route=dashboard/clients</code>. There are two search methods and two critical filter traps.</p>\n\n<h3>Quick Search Bar</h3>\n\n<p>The full-width input at the top of the client table (<code>#clientsearch</code>) searches by Name, Email, Barcode, or Phone. It has a <strong>1500ms debounce</strong> \u2014 after you stop typing, it fires an AJAX reload of the table. The value gets copied to hidden field <code>#clientnamesearch</code>, then <code>#updatelist</code> (the hidden Filter button) is triggered.</p>\n\n<h3>Advanced Filter Bar</h3>\n\n<p>Below the search bar, columns can be filtered via a dropdown selector (<code>parent_selection[]</code>) with options: First Name, Last Name, Gender, Birth Month, Age, Email, Phone, Client Status. Match types: contains, begins with, ends with, is.</p>\n\n<h3>The Alumni Status Gotcha</h3>\n\n<p>The status filter (<code>#filter_status</code>) defaults to <strong>Active Clients</strong>. A contact who cancelled their membership is an <strong>Alumni</strong>, not Active. <strong>You will not find them unless you switch the filter to Alumni Clients.</strong></p>\n\n<p>Status filter options: Active Clients, Alumni Clients, Removed Clients, Deleted Clients.</p>\n\n<h3>Corporate Client LookUp</h3>\n\n<p>The <strong>Corporate Client LookUp</strong> button (<code>#corpClientLookup_btn</code>) toggles to a second DataTable (<code>#clientLookupTable</code>) that searches across <strong>all locations</strong> in the account. Use this when you know the person exists in Core but don't know which location they're at. Click \"Back\" to return to the single-location view.</p>\n\n<h3>Direct URL (if you have the client ID)</h3>\n\n<p>If you already have the base64-encoded client ID, go directly:</p>\n<code>/index.php?route=dashboard/clients/assessment&amp;cid={BASE64_CLIENT_ID}</code>\n\n<p>Via API (read-only): <code>GET /v2/customer/client?email={email}</code> or <code>?phone={phone}</code> or <code>?barcode={barcode}</code>.</p>\n\n<hr>\n\n<h2>Sessions vs Packages \u2014 The \"Show Visits\" Trick</h2>\n\n<p>The most common confusion in Core: <strong>the Past Sessions view does NOT show which package paid for each session.</strong> It only shows \"Paid by credits\" without identifying the source package.</p>\n\n<p><strong>The answer is on the Packages section, not the Sessions section.</strong></p>\n\n<p>Every package (active or archived) has two links:</p>\n\n<ul>\n  <li><strong>\"Show Visits\"</strong> (<code>pkgcreditsbookinghistory</code>) \u2014 Shows every session consumed from that specific package with columns: S.N, Booking Date Time, Description (class name + date/time), Location Of Use (Home/Away), Credits Used/Refunded, Status (Attended/Cancelled/Late Cancel/No Show)</li>\n  <li><strong>\"View History\"</strong> (<code>pkgpaymentdetails</code>) \u2014 Shows the payment/billing history for that specific package</li>\n</ul>\n\n<h3>How to Trace Sessions for a Package</h3>\n\n<ol>\n  <li>Go to the client detail page</li>\n  <li>Look at the <strong>Active Packages</strong> section \u2014 or click <strong>Archived Packages</strong> to see past/expired packages (intro offers, expired class packs, past memberships)</li>\n  <li>Each package shows: Package Name, Credit Limit, valid for {type} valid until {date}, and credit counts (Available/Booked/Used)</li>\n  <li>Click <strong>\"Show Visits\"</strong> on the target package \u2014 this is the definitive list of sessions consumed under that package</li>\n</ol>\n\n<p><strong>For intro offers specifically:</strong> The intro offer package will be in Archived Packages if it's expired. Click \"Archived Packages\" to find it.</p>\n\n<p><strong>For free classes:</strong> Look for $0.00 packages (e.g., \"Friend Free STRONG Class\") in either active or archived. \"Show Visits\" works the same way.</p>\n\n<p>The session view dropdown (<code>#client-schedules</code>) has 4 options: Booked Sessions, Past Sessions, Cancelled Sessions, Schedule Activity Stream. All require a date range (<code>#schedule_date_from</code> / <code>#schedule_date_to</code>) and clicking the <code>#filer_client_schedule</code> button (note: \"filer\", not \"filter\" \u2014 this is misspelled in the source). Default range is ~60 days back.</p>\n\n<hr>\n\n<h2>Reports That Look Similar But Need Different Filters</h2>\n\n<p>Three groups of near-identical reports that differ by what transactions or statuses they include. Getting these wrong means missing data.</p>\n\n<h3>Group A: Revenue Transaction Reports</h3>\n\n<p>Three reports, same columns, different scope:</p>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>What It Shows</th>\n      <th>What It Excludes</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Net Revenue Detail</td>\n      <td><code>getNetRevenueDetail</code></td>\n      <td>Completed/settled transactions only</td>\n      <td>In-processing and failed transactions</td>\n    </tr>\n    <tr>\n      <td>Net Revenue + In Processing</td>\n      <td><code>getAllNetRevenueDetail2</code></td>\n      <td>Completed + in-processing transactions</td>\n      <td>Failed transactions only</td>\n    </tr>\n    <tr>\n      <td>All Invoices Report</td>\n      <td><code>getAllTransactionsReport</code></td>\n      <td>Every invoice created in date range</td>\n      <td>Nothing \u2014 shows current status of each</td>\n    </tr>\n  </tbody>\n</table>\n\n<p>All three share the same columns: S.No, Full Name, Email, Payment Method, Invoice Date, Transaction Category, Description, Transaction Id, Processed By, Sale Referred By, Payment Date, Payment Status, Admin Fee, Failed Payment Fee, Transaction Fee, Tax, Discount, Gross Revenue, Revenue Type, Net Revenue.</p>\n\n<p><strong>Payment Status values:</strong> Revenue, Refund, In Processing, Failed, Partially Refunded.</p>\n<p><strong>Revenue Type values:</strong> Session Package, Membership, No Show Fee, Late Cancel Fee, POS, Gift Card.</p>\n\n<p><strong>When to use which:</strong> Use \"Net Revenue Detail\" for clean revenue numbers. Use \"All Invoices\" when investigating a specific transaction's current status (a refunded transaction may show as \"Revenue\" in Net Revenue Detail but \"Refund\" in All Invoices if refunded after the reporting date). Use \"Net Revenue + In Processing\" when you need to include pending payments.</p>\n\n<h3>Group B: Membership Status Reports</h3>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>Default View</th>\n      <th>What You Miss Without Filter Changes</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Membership Details</td>\n      <td><code>getMembershipDetails</code></td>\n      <td>Active only</td>\n      <td>Pending, Suspended, Cancelled, Complete, Scheduled, Partially Refunded</td>\n    </tr>\n    <tr>\n      <td>Client on Memberships</td>\n      <td><code>getactivemembershippkgs</code></td>\n      <td>Active only</td>\n      <td>Same \u2014 cancelled/suspended members are invisible</td>\n    </tr>\n    <tr>\n      <td>Client Not On Membership</td>\n      <td><code>getnonactivemembershippkgs</code></td>\n      <td>Not on active membership</td>\n      <td>Clients on suspended/pending memberships appear here even though they technically have one</td>\n    </tr>\n    <tr>\n      <td>Cancellation Report</td>\n      <td><code>cancelledMemberships</code></td>\n      <td>Cancelled only</td>\n      <td>Active/suspended/pending members</td>\n    </tr>\n  </tbody>\n</table>\n\n<p><strong>Membership Details is the most complete report.</strong> It has a Membership Status filter with checkboxes: Active, Pending, Suspended, Cancelled, Complete, Scheduled, Partially Refunded. <strong>You must check all statuses to get the full picture.</strong> The default \"Active\" view misses anyone who cancelled, suspended, or completed their membership.</p>\n\n<p>Membership Details columns: S.No, Full Name, Email, Phone, Address, Postal Code, Member Created Date, Package Name, Package Type, Package Category, Package Price, Package Status, Date Sold, Intro Offer Purchase Date, Auto Renew, Auto Renew Date, Expiry Date, Completed Date, Last Payment Date, Last Payment Amount, Next Payment Date, Next Payment Amount, Member Inactive Date, Cancel Date, Cancellation Reason.</p>\n\n<h3>Group C: Payment Failure Reports</h3>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>What It Shows</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Failed Payments</td>\n      <td><code>paymentfailed</code></td>\n      <td>Failed payments still pending (unresolved)</td>\n    </tr>\n    <tr>\n      <td>Failed Payment History</td>\n      <td><code>paymentfailedhistory</code></td>\n      <td>All failed payments with their current status (may now be resolved)</td>\n    </tr>\n  </tbody>\n</table>\n\n<p>Same concept as Group A: one shows the current unresolved problem, the other shows the full history including resolved failures.</p>\n",
+  "reports": {
+    "categories": [
+      {
+        "name": "Clients & Attendance",
+        "count": 30,
+        "reports": [
+          {
+            "filterName": "sessionfeedback",
+            "title": "Session Feedback Report",
+            "description": "All session feedback",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "all_clients",
+            "title": "All Clients",
+            "description": "Detailed list of all clients",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "passwordless_signup_clients",
+            "title": "Passwordless Signup Clients",
+            "description": "Clients who signed up via passwordless signup",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "birthdaysthismonth",
+            "title": "Birthday Reports",
+            "description": "Client birthdays with month filters",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "logincountlast30days",
+            "title": "Client Login Count",
+            "description": "Active clients login count in last 30 days",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "clientabsent2weeks",
+            "title": "Clients Absent",
+            "description": "Clients not attended in filtered date range",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "clientlatecancel30days",
+            "title": "Late Cancels",
+            "description": "Clients who have late cancelled",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "lostclients30days",
+            "title": "Lost Clients",
+            "description": "Clients whose status changed from active to alumni",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "newclients",
+            "title": "New Clients",
+            "description": "New clients added on account",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "membermovement",
+            "title": "Member Movement",
+            "description": "Credit changes over filtered date range",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "firstvisits",
+            "title": "First Visits",
+            "description": "Clients who attended first session in date range",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "clientrsvplast30days",
+            "title": "No Shows",
+            "description": "Clients who RSVP'd but did not attend",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "activeclients",
+            "title": "Recent Attendees",
+            "description": "Clients attended at least 1 session in last 15 days",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "referrals",
+            "title": "Referrals",
+            "description": "Referrals per member over filtered date range",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "attendance_summary_bysession",
+            "title": "Attendance by Session Type",
+            "description": "Attendance by session type for last 6 months",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "attendance_summary",
+            "title": "Attendance Summary",
+            "description": "Attendance records by month",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "clientperiod",
+            "title": "Client Lifetime",
+            "description": "Lifetime of all clients as active client",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "client_retention_rate",
+            "title": "Client Retention Rate",
+            "description": "Retention rate in last 6 months",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "clientgenderagegraph",
+            "title": "Gender and Age Group",
+            "description": "Gender and age group breakdown",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "clientaddressmap",
+            "title": "Geographical Client Distribution",
+            "description": "Map of all clients primary address",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "checkin",
+            "title": "Client Check-in",
+            "description": "All client check-ins",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "AttendanceBySession",
+            "title": "Attendance by Session",
+            "description": "Attendance and utilization by session name",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "oneToOne",
+            "title": "One to One Sessions",
+            "description": "Users who attended 1-on-1 sessions",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "delinquency",
+            "title": "Member Delinquency",
+            "description": "Member delinquency",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "daily_schedule",
+            "title": "Daily Schedule",
+            "description": "Sessions, classes and workshops for selected date",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "unpaidsessions",
+            "title": "Unpaid Sessions",
+            "description": "Clients with unpaid sessions",
+            "reportType": "session"
+          },
+          {
+            "filterName": "bulksessioncancelled",
+            "title": "Cancelled Classes",
+            "description": "Cancelled classes and affected clients",
+            "reportType": "session"
+          },
+          {
+            "filterName": "alumni",
+            "title": "All Alumni",
+            "description": "All alumni clients",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "allprospects",
+            "title": "All Leads",
+            "description": "All leads",
+            "reportType": "prospects"
+          },
+          {
+            "filterName": "introOfferConversions",
+            "title": "Intro Offer Conversions",
+            "description": "Intro offer conversion summary",
+            "reportType": "clients"
+          }
+        ]
+      },
+      {
+        "name": "Marketing",
+        "count": 5,
+        "reports": [
+          {
+            "filterName": "alumni",
+            "title": "All Alumni",
+            "description": "All alumni clients",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "allprospects",
+            "title": "All Leads",
+            "description": "All leads",
+            "reportType": "prospects"
+          },
+          {
+            "filterName": "introOfferConversions",
+            "title": "Intro Offer Conversions",
+            "description": "Intro offer conversion summary",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "averagedaystosignup",
+            "title": "Days to Sign Up",
+            "description": "Days to sign up for active clients converted from lead",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "leadsources",
+            "title": "Lead Sources",
+            "description": "Count of leads from all lead sources",
+            "reportType": "clients"
+          }
+        ]
+      },
+      {
+        "name": "Financial",
+        "count": 33,
+        "reports": [
+          {
+            "filterName": "avginomeperclient",
+            "title": "Average Transaction Per Client",
+            "description": "Average transaction value per client",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getincomehandover",
+            "title": "Income Handover Report",
+            "description": "Income handover for membership usage",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getactivemembershippkgs",
+            "title": "Client on Memberships",
+            "description": "Clients with active membership",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getnonactivemembershippkgs",
+            "title": "Client Not On Membership",
+            "description": "Clients not on membership",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getMembershipDetails",
+            "title": "Membership Details",
+            "description": "All memberships: active, pending, suspended, cancelled, complete, scheduled",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "cancelledMemberships",
+            "title": "Cancellation Report",
+            "description": "Clients who cancelled membership",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getNetRevenueDetail",
+            "title": "Net Revenue Detail",
+            "description": "Net revenue by transaction \u2014 completed/settled only",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getNetRevenueDetail2",
+            "title": "Net Revenue Detail (v2)",
+            "description": "Net revenue by transaction (alternate)",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getAllNetRevenueDetail2",
+            "title": "Net Revenue + In Processing",
+            "description": "All transactions combined \u2014 completed plus in-processing",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getAllTransactionsReport",
+            "title": "All Invoices Report",
+            "description": "All invoices in date range with current status \u2014 shows nothing excluded",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "zeroValueTransactions",
+            "title": "100% Discount Report",
+            "description": "Transactions with $0.00 net amount",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "membershipexpringnext30days",
+            "title": "Memberships Expiring",
+            "description": "Active memberships expiring soon",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getpaymentsnext30days",
+            "title": "Projected Revenue",
+            "description": "Projected future revenue from recurring memberships",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "posHistory",
+            "title": "POS History",
+            "description": "All POS transactions",
+            "reportType": "pos"
+          },
+          {
+            "filterName": "salesByService",
+            "title": "Sales by Service",
+            "description": "Sales by service description",
+            "reportType": "pos"
+          },
+          {
+            "filterName": "getpaymentslast30days",
+            "title": "In Processing Transactions",
+            "description": "Payments in processing",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "refundHistory",
+            "title": "Refund History",
+            "description": "All refunds over filtered date range",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "m2msummary",
+            "title": "Month to Month Summary",
+            "description": "Month-to-month revenue history",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getpaymentsrange",
+            "title": "Amount Due",
+            "description": "Total unpaid amount due in date range",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "ezypaysettlement",
+            "title": "Ezypay Settlement Report",
+            "description": "Ezypay settlement reports",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "billinghistory",
+            "title": "Billing History",
+            "description": "Total bills / total payments by client",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "paymentfailed",
+            "title": "Failed Payments",
+            "description": "Failed payments still pending (unresolved)",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "paymentfailedhistory",
+            "title": "Failed Payment History",
+            "description": "Failed payment history with current status \u2014 may now be resolved",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getdiscount",
+            "title": "Discounts",
+            "description": "All discounts over filtered date range",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getpromocodeusage",
+            "title": "Promo Code Usage",
+            "description": "Promotional code usage history",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "outstandingpayments",
+            "title": "Outstanding Payment Requests",
+            "description": "All outstanding payment requests",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "paymentsuspended",
+            "title": "Suspended Memberships",
+            "description": "Suspended memberships with activated dates",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "creditsremaining",
+            "title": "Session Credits Remaining",
+            "description": "Credits remaining for single packages in date range",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "revenueusedreport",
+            "title": "Revenue Used Report",
+            "description": "Revenue used for single packages",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "expiredsessioncredits",
+            "title": "Expired Session Credits",
+            "description": "Unused expired credits",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "kpiperformancereport",
+            "title": "KPI Performance Report",
+            "description": "Key performance statistics",
+            "reportType": "kpi"
+          },
+          {
+            "filterName": "clients_with_account_credit_balance",
+            "title": "Clients with Account Credit",
+            "description": "Clients with credit balance",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "getpaymentslast30days",
+            "title": "In Processing Transactions",
+            "description": "Payments currently in processing",
+            "reportType": "clients"
+          }
+        ]
+      },
+      {
+        "name": "Staff",
+        "count": 5,
+        "reports": [
+          {
+            "filterName": "payroll",
+            "title": "Payroll",
+            "description": "Payroll history",
+            "reportType": "payroll"
+          },
+          {
+            "filterName": "clientperstaff",
+            "title": "Clients Per Staff",
+            "description": "Clients attended per staff member",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "sessionsperstaff",
+            "title": "Session Per Staff",
+            "description": "Sessions per staff member",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "staffutilization",
+            "title": "Staff Utilization",
+            "description": "Utilization summary per session for staff",
+            "reportType": "clients"
+          },
+          {
+            "filterName": "payrollLogs",
+            "title": "Payroll Tier Audit",
+            "description": "Payroll tier assignments",
+            "reportType": "payroll"
+          }
+        ]
+      },
+      {
+        "name": "Inventory",
+        "count": 1,
+        "reports": [
+          {
+            "filterName": "currentinventory",
+            "title": "Current Inventory",
+            "description": "Current product inventory levels",
+            "reportType": "inventory"
+          }
+        ]
+      }
+    ],
+    "stats": {
+      "total": 88,
+      "categories": 5
+    },
+    "urlPattern": "/index.php?route=dashboard/advreports&report_type={type}&filter={filter_name}",
+    "commonFeatures": [
+      "Date range filter",
+      "Text column filters",
+      "CSV/XLS download",
+      "Save/Modify report"
+    ],
+    "statusFilters": {
+      "membership": [
+        "Active",
+        "Pending",
+        "Suspended",
+        "Cancelled",
+        "Complete",
+        "Scheduled",
+        "Partially Refunded"
+      ],
+      "client": [
+        "Active Clients",
+        "Alumni Clients",
+        "Removed Clients",
+        "Deleted Clients"
+      ],
+      "payment": [
+        "Paid",
+        "Refunded",
+        "Processing",
+        "Refund Processing",
+        "Failed"
+      ],
+      "paymentStatus": [
+        "Revenue",
+        "Refund",
+        "In Processing",
+        "Failed",
+        "Partially Refunded"
+      ],
+      "revenueType": [
+        "Session Package",
+        "Membership",
+        "No Show Fee",
+        "Late Cancel Fee",
+        "POS",
+        "Gift Card"
+      ]
+    },
+    "revenueReportColumns": "S.No, Full Name, Email, Payment Method, Invoice Date, Transaction Category, Description, Transaction Id, Processed By, Sale Referred By, Payment Date, Payment Status, Admin Fee, Failed Payment Fee, Transaction Fee, Tax, Discount, Gross Revenue, Revenue Type, Net Revenue",
+    "membershipDetailsColumns": "S.No, Full Name, Email, Phone, Address, Postal Code, Member Created Date, Package Name, Package Type, Package Category, Package Price, Package Status, Date Sold, Intro Offer Purchase Date, Auto Renew, Auto Renew Date, Expiry Date, Completed Date, Last Payment Date, Last Payment Amount, Next Payment Date, Next Payment Amount, Member Inactive Date, Cancel Date, Cancellation Reason",
+    "newClientsColumns": "S. No., Full Name, Email, Phone, Home Location(S), Join Date, Client Status, Package Name, First Payment Date, First Package Description, First Payment Amount",
+    "favouriteReports": [
+      "Client on Memberships",
+      "Late Cancels",
+      "No Shows",
+      "First Visits",
+      "Sales by Service",
+      "Membership Details",
+      "Cancellation Report",
+      "Session Credits Remaining",
+      "Ezypay Settlement Report",
+      "Intro Offer Conversions",
+      "Projected Revenue",
+      "Suspended Memberships",
+      "New Clients",
+      "Session Feedback Report",
+      "Recurring Memberships (excl $0.00)"
+    ]
+  },
+  "clientManagement": {
+    "searchMethods": [
+      {
+        "name": "Quick Search",
+        "description": "Full-width input at the top of the client table. Searches by Name, Email, Barcode, or Phone. Has a 1500ms debounce \u2014 after you stop typing, it fires an AJAX reload of the table. The value gets copied to hidden field #clientnamesearch, then #updatelist (the hidden Filter button) is triggered.",
+        "selector": "#clientsearch"
+      },
+      {
+        "name": "Advanced Filter Bar",
+        "description": "Below the search bar, columns can be filtered via a dropdown selector (parent_selection[]) with options: First Name, Last Name, Gender, Birth Month, Age, Email, Phone, Client Status. Match types: contains, begins with, ends with, is.",
+        "selector": "parent_selection[]"
+      },
+      {
+        "name": "Corporate Client LookUp",
+        "description": "Toggles to a second DataTable (#clientLookupTable) that searches across ALL locations in the account. Use when you know the person exists in Core but don't know which location they're at. Click Back to return to single-location view.",
+        "selector": "#corpClientLookup_btn"
+      },
+      {
+        "name": "Direct URL",
+        "description": "If you already have the base64-encoded client ID, go directly to /index.php?route=dashboard/clients/assessment&cid={BASE64_CLIENT_ID}. The numeric ID is base64-encoded (e.g., MzA3NjI2Mg== = 3076262).",
+        "selector": null
+      },
+      {
+        "name": "API Lookup",
+        "description": "Read-only. GET /v2/customer/client?email={email} or ?phone={phone} or ?barcode={barcode}.",
+        "selector": null
+      }
+    ],
+    "statusFilters": [
+      "Active Clients",
+      "Alumni Clients",
+      "Removed Clients",
+      "Deleted Clients"
+    ],
+    "clientListColumns": [
+      "Client Name",
+      "Email",
+      "Barcode",
+      "Gender",
+      "Phone",
+      "Action"
+    ],
+    "subTabs": [
+      {
+        "name": "Clients",
+        "route": "/index.php?route=dashboard/clients"
+      },
+      {
+        "name": "Groups",
+        "route": "/index.php?route=dashboard/clients/groups"
+      },
+      {
+        "name": "Programs",
+        "route": "/index.php?route=dashboard/programs"
+      },
+      {
+        "name": "Leads",
+        "route": "/index.php?route=dashboard/leads"
+      },
+      {
+        "name": "Feedback",
+        "route": "/index.php?route=dashboard/feedback"
+      }
+    ],
+    "clientDetail": {
+      "profileSidebar": [
+        {
+          "field": "Photo",
+          "description": "Upload/camera, drag-and-drop"
+        },
+        {
+          "field": "Phone",
+          "description": "Mobile number"
+        },
+        {
+          "field": "Email",
+          "description": "Primary email"
+        },
+        {
+          "field": "Age",
+          "description": "Calculated from DOB"
+        },
+        {
+          "field": "Home Location",
+          "description": "Location name or N/A"
+        },
+        {
+          "field": "Upcoming Sessions",
+          "description": "Next booked class"
+        },
+        {
+          "field": "Last Login",
+          "description": "Date of last app/kiosk login"
+        },
+        {
+          "field": "Location Attendance",
+          "description": "Total check-ins at this location"
+        },
+        {
+          "field": "Total Corp Attendance",
+          "description": "Check-ins across all locations"
+        },
+        {
+          "field": "No Shows",
+          "description": "No-show count"
+        },
+        {
+          "field": "Total Billing",
+          "description": "Total amount billed"
+        },
+        {
+          "field": "Next Billing",
+          "description": "Next payment date"
+        },
+        {
+          "field": "Account Credit",
+          "description": "Credit balance + Claim Gift Card link"
+        },
+        {
+          "field": "Custom Alerts",
+          "description": "Custom alert messages"
+        },
+        {
+          "field": "File Manager",
+          "description": "Uploaded files/documents"
+        },
+        {
+          "field": "Notes",
+          "description": "Free-text notes"
+        },
+        {
+          "field": "Forms",
+          "description": "Assigned forms with completion status"
+        }
+      ],
+      "profileFormFields": [
+        {
+          "field": "firstname",
+          "type": "text"
+        },
+        {
+          "field": "lastname",
+          "type": "text"
+        },
+        {
+          "field": "gender",
+          "type": "select"
+        },
+        {
+          "field": "mobile",
+          "type": "number"
+        },
+        {
+          "field": "phone",
+          "type": "number"
+        },
+        {
+          "field": "client_email",
+          "type": "email"
+        },
+        {
+          "field": "address",
+          "type": "text"
+        },
+        {
+          "field": "street_number",
+          "type": "text"
+        },
+        {
+          "field": "street_address",
+          "type": "text"
+        },
+        {
+          "field": "country_id",
+          "type": "select"
+        },
+        {
+          "field": "zone_id",
+          "type": "select"
+        },
+        {
+          "field": "city",
+          "type": "text"
+        },
+        {
+          "field": "postcode",
+          "type": "text"
+        },
+        {
+          "field": "dob",
+          "type": "date picker"
+        },
+        {
+          "field": "oc_occupation",
+          "type": "text"
+        },
+        {
+          "field": "barcode_id",
+          "type": "text"
+        },
+        {
+          "field": "fob_number",
+          "type": "text"
+        },
+        {
+          "field": "emergency_name",
+          "type": "text"
+        },
+        {
+          "field": "emergency_relation",
+          "type": "text"
+        },
+        {
+          "field": "emergency_phone",
+          "type": "number"
+        },
+        {
+          "field": "emergency_email",
+          "type": "text"
+        },
+        {
+          "field": "emergency_address",
+          "type": "text (same structure as primary address)"
+        },
+        {
+          "field": "reference_customer_id",
+          "type": "text (referral)"
+        },
+        {
+          "field": "custom_property[{id}]",
+          "type": "textarea (custom fields)"
+        },
+        {
+          "field": "opt_email",
+          "type": "checkbox"
+        },
+        {
+          "field": "opt_sms",
+          "type": "checkbox"
+        },
+        {
+          "field": "unsubscribe_msgs",
+          "type": "checkbox"
+        },
+        {
+          "field": "use_account_credit_paymn",
+          "type": "checkbox"
+        }
+      ],
+      "sessionViews": [
+        "Booked Sessions",
+        "Past Sessions",
+        "Cancelled Sessions",
+        "Schedule Activity Stream"
+      ],
+      "sessionViewSelector": "#client-schedules",
+      "sessionDateFilters": [
+        "#schedule_date_from",
+        "#schedule_date_to"
+      ],
+      "sessionFilterButton": "#filer_client_schedule",
+      "sessionFilterButtonNote": "Misspelled 'filer' not 'filter' in source code",
+      "sessionDefaultRange": "~60 days back",
+      "packageManagement": {
+        "showVisits": "Shows every session consumed from a specific package with columns: S.N, Booking Date Time, Description, Location Of Use, Credits Used/Refunded, Status",
+        "showVisitsSelector": "pkgcreditsbookinghistory",
+        "viewHistory": "Shows the payment/billing history for a specific package",
+        "viewHistorySelector": "pkgpaymentdetails",
+        "toggles": [
+          "Active Packages",
+          "Archived Packages"
+        ],
+        "packageFields": [
+          "Package Name",
+          "Home Location",
+          "Credit Limit",
+          "Valid For (class types)",
+          "Valid Until (date/Unending)",
+          "Credits Available",
+          "Credits Booked",
+          "Credits Used",
+          "Billing Begin Date",
+          "Billing End Date",
+          "Price",
+          "Billing Period",
+          "Shared Locations (On/Off)"
+        ]
+      },
+      "paymentTabs": [
+        {
+          "name": "Payment Log",
+          "description": "Transaction history with filters \u2014 date range, type (All/Single/Membership), status (All/Paid/Refunded)"
+        },
+        {
+          "name": "Memberships",
+          "description": "Recurring payment records"
+        },
+        {
+          "name": "Scheduled",
+          "description": "Upcoming payments"
+        },
+        {
+          "name": "Outstanding Payments",
+          "description": "Unpaid invoices"
+        },
+        {
+          "name": "PAYG",
+          "description": "Pay-as-you-go records"
+        }
+      ],
+      "paymentDownloads": [
+        {
+          "name": "Payment Log",
+          "url": "index.php?route=payments/payments/invoiceslist&display_payment_streaming=1&downloadfile=xls"
+        },
+        {
+          "name": "Recurring",
+          "url": "index.php?route=payments/payments/paymentlist&payment_type=recurring&datefilter=no"
+        },
+        {
+          "name": "Scheduled",
+          "url": "index.php?route=payments/getpendinginvoices&pre_sale=1&downloadfile=xls"
+        },
+        {
+          "name": "Outstanding",
+          "url": "index.php?route=payments/payments/outstandingpayments&pre_sale=1&downloadfile=xls"
+        },
+        {
+          "name": "PAYG",
+          "url": "index.php?route=payments/payments/payasyougolist&cid={BASE64_CID}&displaypage=clientfile&downloadfile=xls"
+        },
+        {
+          "name": "PDF Download",
+          "url": "index.php?route=dashboard/payments/downloadtranerclientpdf"
+        }
+      ],
+      "assessmentTypes": [
+        {
+          "name": "3-site skinfold",
+          "details": "tricep, suprailiac, thigh"
+        },
+        {
+          "name": "7-site skinfold",
+          "details": "chest, abdominal, thigh, tricep, subscapular, suprailiac, midaxillary"
+        },
+        {
+          "name": "BMI",
+          "details": "height, weight"
+        },
+        {
+          "name": "Body composition",
+          "details": "multiple measurements"
+        },
+        {
+          "name": "Resting heart rate",
+          "details": "3x pulse"
+        },
+        {
+          "name": "Blood pressure",
+          "details": ""
+        },
+        {
+          "name": "Body fat % Navy method",
+          "details": "waist, neck, hips, height"
+        },
+        {
+          "name": "1RM",
+          "details": "weight, reps"
+        },
+        {
+          "name": "Flexibility",
+          "details": ""
+        },
+        {
+          "name": "Custom measurement",
+          "details": ""
+        },
+        {
+          "name": "Timed test",
+          "details": "completion time"
+        },
+        {
+          "name": "Rockport walk test",
+          "details": "age, weight, walk time, 10-sec pulse"
+        },
+        {
+          "name": "Step test",
+          "details": "age, resting heart rate"
+        },
+        {
+          "name": "Waist-to-hip ratio",
+          "details": ""
+        }
+      ],
+      "assessmentSettings": [
+        "Enable/disable client self-assessment",
+        "Enable progress photos",
+        "Email notifications",
+        "Measurement units (MM/CM, INCH, KG, LBS, ST)"
+      ],
+      "clientActions": [
+        "Create Session",
+        "Add Session",
+        "Active/Archived Packages toggle",
+        "Add Assessments (Single / Group)",
+        "Delete Client",
+        "Buddy system (Search Buddy, Save Buddy)",
+        "Parent/Child accounts (add family members with permissions)",
+        "Download Package Agreement"
+      ]
+    }
+  },
+  "payments": {
+    "retailDashboard": {
+      "url": "index.php?route=payments/payments",
+      "subTabs": [
+        "Retail Dashboard",
+        "Retail Snapshot",
+        "Outstanding Payments",
+        "Failed Payments",
+        "Bulk Edit Future Transactions"
+      ],
+      "revenueWidgets": [
+        "Net Revenue",
+        "Recurring Revenue",
+        "Average Revenue Per Client",
+        "Revenue Graph"
+      ],
+      "historyTabs": [
+        {
+          "name": "Payment Log",
+          "columns": "Client, Transaction Date, Description, Invoice #, Type (Single/Membership), Status (Paid/Refunded/Processing/Refund Processing), Amount"
+        },
+        {
+          "name": "Memberships",
+          "columns": "Recurring payment records"
+        },
+        {
+          "name": "Scheduled",
+          "columns": "Future-dated payments"
+        },
+        {
+          "name": "POS",
+          "columns": "Point-of-sale transactions"
+        },
+        {
+          "name": "Gift Card",
+          "columns": "Gift card transactions"
+        }
+      ],
+      "liveRetailStream": "Real-time feed of transactions. Filter by: All (or specific types)."
+    },
+    "retailConfig": {
+      "url": "index.php?route=dashboard/packages/packages&pkgtype=single",
+      "subTabs": [
+        "Session Package",
+        "Memberships",
+        "POS Inventory",
+        "Promo Codes",
+        "Gift Cards",
+        "Retail Settings",
+        "Bulk Extend Package Expiry"
+      ],
+      "packageListColumns": [
+        "Package Name",
+        "Category (Packages/Intro Offers/Privates/Recruitment)",
+        "Active status",
+        "Price",
+        "Sold Online status"
+      ],
+      "packageStatusFilter": [
+        "Active",
+        "Archive"
+      ],
+      "resultsPerPage": [
+        "10",
+        "50",
+        "100",
+        "300",
+        "500",
+        "1000"
+      ],
+      "soldOnlineToggle": {
+        "warning": "Always state-check first \u2014 blind-clicking reverses the current state. Clicking toggles state via changepackagestatus endpoint with no explicit on/off param.",
+        "onState": "fa-check green",
+        "offState": "fa-remove red",
+        "selector": "span.actonvariableStatus"
+      }
+    },
+    "newSale": {
+      "url": "payments/payments/addnew",
+      "saleTypes": [
+        "Single Payment",
+        "Recurring Payment",
+        "Session Package (With Credits)",
+        "Membership (With Credits)",
+        "Products",
+        "Gift Cards"
+      ],
+      "notes": "Cart system with Clients Selected panel."
+    }
+  },
+  "settings": {
+    "accountSettings": {
+      "url": "index.php?route=dashboard/trainer",
+      "tabs": [
+        {
+          "name": "Preferences",
+          "route": "dashboard/trainer",
+          "description": "Personal details, email, password, currency, date/time format, name, contact, address, DOB, gender",
+          "fields": [
+            "Business Logo (upload/crop)",
+            "Email",
+            "Password (change)",
+            "Currency ($-AUD)",
+            "Date Format (DD/MM/YYYY)",
+            "Time Format (AM/PM)",
+            "Number Format (1,234.56)",
+            "Name",
+            "Contact Number",
+            "Address (street, city, postcode, country, state)",
+            "DOB",
+            "Gender"
+          ]
+        },
+        {
+          "name": "Configuration",
+          "route": "dashboard/trainer/configuration",
+          "description": "Calendar, booking, client sign-up, directory, business profile, scheduling rules, check-in, retail, referrals, email templates"
+        },
+        {
+          "name": "SMS Credits",
+          "route": "dashboard/trainer/billingsdisplay",
+          "description": "SMS credit balance (included monthly + purchased)"
+        },
+        {
+          "name": "Notifications",
+          "route": "dashboard/notifications",
+          "description": "Toggle push notifications"
+        },
+        {
+          "name": "Integrations",
+          "route": "dashboard/apps",
+          "description": "External app connections and setup"
+        }
+      ]
+    },
+    "configuration": {
+      "sections": [
+        {
+          "name": "My Calendar Settings",
+          "settings": [
+            "Timezone",
+            "Calendar Start Day",
+            "Calendar Interval (15 min)",
+            "Min/Max Time",
+            "Continuous Events",
+            "Default Booked List Order",
+            "Client Sign Up Fields (Client Mode / Business Mode)"
+          ]
+        },
+        {
+          "name": "Directory Listings",
+          "settings": [
+            "Profile Page (Public/Private)",
+            "Contact Number visibility",
+            "Client Feedback Ratings visibility",
+            "Allow Client Inquiries"
+          ]
+        },
+        {
+          "name": "Business Profile",
+          "settings": [
+            "Username (link.hapana.com/)",
+            "Tabs Displayed (Classes/Packages)",
+            "Default Tab",
+            "Default Calendar View",
+            "Enable Client Sign Up",
+            "Available Client Tabs (Information/Notes/Schedule/Payments)",
+            "Default Client Tab",
+            "Enable Multiple Reservations",
+            "Enable SOAP Session Notes",
+            "Request Booking Time Slots",
+            "Enable Auto Logout",
+            "Auto Deduct Credits",
+            "Auto Confirm Bookings Request"
+          ]
+        },
+        {
+          "name": "Scheduling & Display",
+          "settings": [
+            "Default Color For Fully Paid Classes",
+            "Days to Display (Classes/Privates/Workshops advance days)",
+            "Reservations (advance booking days + cutoff hours)",
+            "Cancellations (per session type: days + hours + minutes before start)",
+            "Allow Schedule Template Cancellation Override",
+            "Waitlist Lock Period",
+            "Waitlist Restrictions",
+            "Enable Book A Buddy",
+            "Automatic Waitlist Promotion (hours before)",
+            "Class Tab display options (Price column, Instructor filter, Session type filter, Room filter, Display class size, Display completed classes)"
+          ]
+        },
+        {
+          "name": "Check-In & Scheduling",
+          "settings": [
+            "Receive Email When Clients Book (every booking)",
+            "Enable Drag and Drop on Schedule",
+            "Hide Team Member When No Sessions",
+            "Hide Room When No Session",
+            "Enable Check-In Pop-Ups",
+            "Enable Check-In Widget",
+            "Enable Check-In Sound Alerts",
+            "Enable General Check-In",
+            "Barcode Check-In Screen Refresh Period",
+            "Enable Client Check-In (Mobile)",
+            "Enable Cash Drawer"
+          ]
+        },
+        {
+          "name": "Client & Waitlist",
+          "settings": [
+            "Allow Clients to Decline/Cancel Sessions",
+            "Waitlist Promotion Method (Confirmation Window)",
+            "Length of Time for Client to Confirm Waitlist Promotion",
+            "Manual Waitlist-to-Booked Movement"
+          ]
+        },
+        {
+          "name": "Retail",
+          "settings": [
+            "Allow Duplicate Credit Membership/Package sales",
+            "Sort Packages (by Category then Name)",
+            "Auto-Renew Package if Credits Exhausted",
+            "Credits ON HOLD if Processing Payment",
+            "Credits ON HOLD if Failed Payment",
+            "Sign-up Captcha",
+            "Print POS Receipts",
+            "Allow Change of Processed By at Sale",
+            "Require Recipient for Gift Card Sales",
+            "Restrict Adding Client to Class (If Payment Required)",
+            "Hide Add Client While Creating Sessions",
+            "Redirect After Package Payment"
+          ]
+        },
+        {
+          "name": "Other",
+          "settings": [
+            "Minimum Sign Up Age",
+            "Auto Assign Barcode",
+            "Display Map on Business Profile",
+            "Show Business Info on Client Dashboard",
+            "External Feedback Link",
+            "Dashboard Revenue Period",
+            "Default Communication Opt-In/Out Preferences",
+            "Prevent New Client Signup with Existing Phone Number"
+          ]
+        },
+        {
+          "name": "Contactless Check-In",
+          "settings": [
+            "Check-in Start Time",
+            "Check-in End Time",
+            "Allow Re-check-ins During Window"
+          ]
+        },
+        {
+          "name": "Buddy Session Sharing Visibility",
+          "settings": [
+            "Enable/Disable"
+          ]
+        },
+        {
+          "name": "Referrals",
+          "settings": [
+            "Credit Allocated to Existing Client (AUD 25 default)",
+            "Credit Allocated to New Client (AUD 25 default)"
+          ]
+        }
+      ]
+    },
+    "emailTemplates": {
+      "totalCount": "60+",
+      "categories": [
+        {
+          "name": "Admin",
+          "templates": [
+            "Change Password",
+            "Changed Email",
+            "Welcome Email (3 variants)",
+            "Questionnaire Form",
+            "Team Member Welcome"
+          ]
+        },
+        {
+          "name": "Family",
+          "templates": [
+            "Accept Family Member",
+            "Decline Family Member",
+            "Invite Family Member"
+          ]
+        },
+        {
+          "name": "Engagement",
+          "templates": [
+            "Birthday",
+            "Feedback Request",
+            "First Visit Anniversary"
+          ]
+        },
+        {
+          "name": "Package",
+          "templates": [
+            "Package Sharing",
+            "Allocate Without Payment"
+          ]
+        },
+        {
+          "name": "Retail",
+          "templates": [
+            "Gift Card (3 variants)",
+            "Failed Payment (Membership)",
+            "Failed Payment (Single)",
+            "Invoice Refunded",
+            "Membership Auto Renew",
+            "Membership Cancelled",
+            "Membership Card Expiring",
+            "Membership Suspended",
+            "Package Agreement (2 variants)",
+            "Payment Receipt (4 variants)",
+            "Payment Request",
+            "Payment Log",
+            "Credits Running Low",
+            "Package Expiring"
+          ]
+        },
+        {
+          "name": "Schedule",
+          "templates": [
+            "Booking Confirmation (with Resources)",
+            "Booking Request Accept",
+            "Booking Request Confirm",
+            "Booking Request Decline",
+            "Booking Request Reschedule",
+            "Cancel Client (Single)",
+            "Cancel Client (Recurring)",
+            "Delete Client (Single)",
+            "Delete Client (Recurring)",
+            "First Session Complete",
+            "First Visit Email",
+            "Invite (Single)",
+            "Invite (Recurring)",
+            "Remove from Session (Insufficient Credit)",
+            "Reservation Reminder (standard)",
+            "Reservation Reminder (Zoom)",
+            "Resource Spot Changes",
+            "Session Booking Confirmation",
+            "Session Message",
+            "Teacher Sub",
+            "Waitlist Booking Confirmation Business Mode",
+            "Waitlist Booking Confirmation Client Mode",
+            "Waitlist Spot Available",
+            "Waitlist Spot Confirmed"
+          ]
+        },
+        {
+          "name": "Tracking",
+          "templates": [
+            "Assessment Reminder"
+          ]
+        }
+      ]
+    },
+    "teamSettings": {
+      "url": "index.php?route=dashboard/trainer/teamconfiguration",
+      "tableColumns": [
+        "Team Member (name)",
+        "Email",
+        "Account Type",
+        "Group",
+        "Phone",
+        "Actions"
+      ],
+      "accountTypes": [
+        {
+          "type": "Master Admin",
+          "description": "Full platform access (e.g., the studio's Hapana account itself, plus adminstrong@hapana.com)"
+        },
+        {
+          "type": "Administrator",
+          "description": "Full access, assigned to groups (HQ, Studio Owner, Master Admin)"
+        },
+        {
+          "type": "Employee",
+          "description": "Limited access, typically instructors"
+        }
+      ],
+      "groups": [
+        "HQ",
+        "Studio Owner",
+        "Instructors",
+        "Master Admin"
+      ],
+      "actions": [
+        "Reset & Send (password reset)",
+        "Edit permissions"
+      ]
+    },
+    "locationSettings": {
+      "url": "index.php?route=directory/directory/mylisting",
+      "sections": [
+        {
+          "name": "Business Information",
+          "description": "Name, phone, email, description, website, socials, operating hours"
+        },
+        {
+          "name": "Business Media",
+          "description": "Photos/media for the location"
+        },
+        {
+          "name": "Services Offered",
+          "description": "Service categories and offerings"
+        },
+        {
+          "name": "Website Embed",
+          "description": "Widget embed codes (widget-id, package-id per embed type)"
+        },
+        {
+          "name": "Questionnaire Forms",
+          "description": "Custom forms for client intake"
+        },
+        {
+          "name": "Contactless Check-In",
+          "description": "Kiosk/QR check-in configuration"
+        },
+        {
+          "name": "Session Feedback",
+          "description": "Feedback criteria and settings"
+        },
+        {
+          "name": "Payroll",
+          "description": "Payroll configuration"
+        },
+        {
+          "name": "Location",
+          "description": "Physical address and map"
+        },
+        {
+          "name": "Room Resource Configuration",
+          "description": "Room/resource setup for scheduling"
+        },
+        {
+          "name": "Properties",
+          "description": "Custom location properties"
+        },
+        {
+          "name": "Policies",
+          "description": "Terms, waivers, agreements"
+        }
+      ],
+      "businessInfoFields": [
+        "Business Name",
+        "Business Phone",
+        "Business Email",
+        "Description (rich text)",
+        "Business Website URL",
+        "Facebook link",
+        "Instagram link",
+        "Twitter link",
+        "Enable booking request (Yes/No)",
+        "Display Business Hours (Yes/No)",
+        "Operating Hours per day (Mon-Sun, open/close times)"
+      ]
+    },
+    "integrations": [
+      {
+        "name": "Ezypay",
+        "category": "Payment Gateway"
+      },
+      {
+        "name": "AnyClass",
+        "category": "Booking"
+      },
+      {
+        "name": "Calendar Sync",
+        "category": "Calendar Sync"
+      },
+      {
+        "name": "Zapier",
+        "category": "Automation"
+      },
+      {
+        "name": "Zoom (Beta)",
+        "category": "Video"
+      },
+      {
+        "name": "Kiosk V1",
+        "category": "Front Desk Kiosk",
+        "notes": "Unique link per location"
+      },
+      {
+        "name": "Hapana API Key",
+        "category": "API",
+        "notes": "API key display"
+      },
+      {
+        "name": "Hapana Leads Keys",
+        "category": "API",
+        "notes": "Lead generation key"
+      },
+      {
+        "name": "Spivi",
+        "category": "Fitness Technology",
+        "notes": "Spivi integration credentials"
+      },
+      {
+        "name": "Facebook Pixel",
+        "category": "Analytics",
+        "notes": "Pixel ID field + 3 event mappings: Account Created (CompleteRegistration), Book Class (Schedule), Purchase/Checkout (Purchase)"
+      },
+      {
+        "name": "Google Tag Manager",
+        "category": "Analytics",
+        "notes": "GTM ID field"
+      },
+      {
+        "name": "Inception Access",
+        "category": "Access Control",
+        "notes": "Barcode Check-in Controller + Sync Controller"
+      },
+      {
+        "name": "Hapana Access",
+        "category": "Access Control",
+        "notes": "Door Access Controller"
+      },
+      {
+        "name": "Topaz",
+        "category": "Signature Pads"
+      },
+      {
+        "name": "accuroFit",
+        "category": "Other"
+      },
+      {
+        "name": "Import Clients",
+        "category": "Import Tools"
+      },
+      {
+        "name": "Import Leads",
+        "category": "Import Tools"
+      }
+    ],
+    "notifications": [
+      "Payment Confirmation",
+      "Event Attendance",
+      "Client Birthdays",
+      "Client Goal Completion",
+      "Client Program Completion",
+      "Client Connection Request",
+      "Payment Received",
+      "Program Comments"
+    ]
+  },
+  "navigation": {
+    "mainNav": [
+      {
+        "item": "Home",
+        "route": "/",
+        "notes": "Studio dashboard"
+      },
+      {
+        "item": "Schedule",
+        "route": "/index.php?route=dashboard/schedule",
+        "notes": "Weekly/monthly calendar"
+      },
+      {
+        "item": "Clients",
+        "route": "/index.php?route=dashboard/clients",
+        "notes": "Client list + sub-tabs"
+      },
+      {
+        "item": "Payments",
+        "route": "dropdown",
+        "notes": "Retail Dashboard, New Sale, Retail Configurations"
+      },
+      {
+        "item": "Reports",
+        "route": "/index.php?route=dashboard/advreports",
+        "notes": "88 reports across 5 categories"
+      }
+    ],
+    "paymentsDropdown": [
+      {
+        "item": "Retail Dashboard",
+        "route": "index.php?route=payments/payments"
+      },
+      {
+        "item": "New Sale",
+        "route": "/index.php?route=payments/payments/addnew"
+      },
+      {
+        "item": "Retail Configurations",
+        "route": "index.php?route=dashboard/packages/packages&pkgtype=single"
+      }
+    ],
+    "profileDropdown": [
+      {
+        "item": "Edit Profile",
+        "route": "index.php?route=directory/directory/mylisting"
+      },
+      {
+        "item": "Team Settings",
+        "route": "index.php?route=dashboard/trainer/teamconfiguration"
+      },
+      {
+        "item": "My Profile",
+        "route": "index.php?route=dashboard/employee/"
+      },
+      {
+        "item": "Account Settings",
+        "route": "index.php?route=dashboard/trainer"
+      },
+      {
+        "item": "Refer and Earn",
+        "route": "index.php?route=dashboard/trainer/referearn"
+      },
+      {
+        "item": "See All Accounts",
+        "route": "/index.php?route=common/home/listAccounts"
+      },
+      {
+        "item": "Logout",
+        "route": "/logout"
+      }
+    ],
+    "topRightIcons": [
+      {
+        "item": "Messages",
+        "notes": "Bulk messaging modal"
+      },
+      {
+        "item": "Notifications",
+        "route": "?route=dashboard/notifications/all"
+      },
+      {
+        "item": "Time Clock",
+        "route": "index.php?route=dashboard/payroll/savetimeclockinout"
+      }
+    ],
+    "routes": [
+      {
+        "route": "/",
+        "page": "Dashboard (Home)",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/schedule",
+        "page": "Schedule",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/schedule/add",
+        "page": "Add/Edit session",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/clients",
+        "page": "Client list",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/clients/groups",
+        "page": "Groups",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/clients/addnewgroup",
+        "page": "Create group",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/clients/assessment",
+        "page": "Client detail",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/clients/addassessment",
+        "page": "Add assessment",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/clients/addgroupassesmmentforclient",
+        "page": "Add group assessment",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/clients/addEditparentchild",
+        "page": "Parent/child account",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/clients/imageupload",
+        "page": "Client photo upload",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/programs",
+        "page": "Programs",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/leads",
+        "page": "Leads",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/feedback",
+        "page": "Feedback",
+        "category": "Core Pages"
+      },
+      {
+        "route": "payments/payments",
+        "page": "Retail Dashboard",
+        "category": "Core Pages"
+      },
+      {
+        "route": "payments/payments/addnew",
+        "page": "New Sale",
+        "category": "Core Pages"
+      },
+      {
+        "route": "payments/payments/invoiceslist",
+        "page": "Invoice list (download)",
+        "category": "Core Pages"
+      },
+      {
+        "route": "payments/payments/paymentlist",
+        "page": "Payment list",
+        "category": "Core Pages"
+      },
+      {
+        "route": "payments/payments/outstandingpayments",
+        "page": "Outstanding payments",
+        "category": "Core Pages"
+      },
+      {
+        "route": "payments/payments/payasyougolist",
+        "page": "PAYG list",
+        "category": "Core Pages"
+      },
+      {
+        "route": "payments/getpendinginvoices",
+        "page": "Pending invoices",
+        "category": "Core Pages"
+      },
+      {
+        "route": "pay/itemsales/paymentdata",
+        "page": "Payment processing",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/packages/packages",
+        "page": "Retail Configurations",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/packages/changepackagestatus",
+        "page": "Toggle Sold Online",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/advreports",
+        "page": "Reports",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/payments/downloadtranerclientpdf",
+        "page": "Download client payment PDF",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/payments/deletepaymentRec",
+        "page": "Delete payment record",
+        "category": "Core Pages"
+      },
+      {
+        "route": "dashboard/schedule/removeclientsession",
+        "page": "Remove client from session",
+        "category": "Core Pages"
+      },
+      {
+        "route": "directory/directory/mylisting",
+        "page": "Edit Profile (location settings)",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "directory/directory/websiteembed",
+        "page": "Website Embed page (widget IDs)",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/trainer",
+        "page": "Account Settings (Preferences sub-tab)",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/trainer/configuration",
+        "page": "Account Settings (Configuration sub-tab)",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/trainer/billingsdisplay",
+        "page": "Account Settings (SMS Credits sub-tab)",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/trainer/teamconfiguration",
+        "page": "Team Settings",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/trainer/updateTrainerAccount",
+        "page": "Session switch (AJAX only!)",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/trainer/updateGuideStatus",
+        "page": "Update guide status",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/trainer/referearn",
+        "page": "Refer and Earn (mostly empty)",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/employee/",
+        "page": "My Profile (employee view)",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/notifications",
+        "page": "Notification Settings",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/apps",
+        "page": "Integrations",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "common/home/listAccounts",
+        "page": "See All Accounts",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "common/home/getsessionrequestbyclient",
+        "page": "Session requests",
+        "category": "Settings/Profile Pages"
+      },
+      {
+        "route": "dashboard/messages",
+        "page": "Messages",
+        "category": "Messaging/Notifications"
+      },
+      {
+        "route": "dashboard/messages/getOnlineUsers",
+        "page": "Online users list",
+        "category": "Messaging/Notifications"
+      },
+      {
+        "route": "dashboard/messages/getNewMessagesCount",
+        "page": "New messages count",
+        "category": "Messaging/Notifications"
+      },
+      {
+        "route": "dashboard/bulkmessage/pullDataList",
+        "page": "Bulk message data",
+        "category": "Messaging/Notifications"
+      },
+      {
+        "route": "dashboard/notifications/all",
+        "page": "All notifications",
+        "category": "Messaging/Notifications"
+      },
+      {
+        "route": "dashboard/notifications/read",
+        "page": "Mark notifications read",
+        "category": "Messaging/Notifications"
+      },
+      {
+        "route": "dashboard/payroll/savetimeclockinout",
+        "page": "Time clock",
+        "category": "Other"
+      },
+      {
+        "route": "module/loginpopup",
+        "page": "Login popup modal",
+        "category": "Other"
+      },
+      {
+        "route": "kiosk/directory/download_client_agreement",
+        "page": "Download package agreement",
+        "category": "Other"
+      }
+    ],
+    "accountSwitching": {
+      "endpoint": "GET /index.php?route=dashboard/trainer/updateTrainerAccount&customer_id={SITE_ID}",
+      "warning": "Never load directly in browser \u2014 returns plain text 'changed' that bricks the tab's rendering. Always use AJAX (XHR from within a Core page) or via the updateSessionID() JavaScript function on the account picker page.",
+      "resetCookies": "Clear siteID, v1Info, PHPSESSID cookies then navigate to https://core.hapana.com/?_=reset",
+      "resetScript": "['siteID','v1Info','PHPSESSID'].forEach(function(n){ document.cookie = n + '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'; document.cookie = n + '=; path=/; domain=.hapana.com; expires=Thu, 01 Jan 1970 00:00:00 GMT'; });"
+    },
+    "login": {
+      "url": "https://core.hapana.com/",
+      "credentialsLocation": "/Users/mariopaguio/Projects/kaizen-client-management/.env",
+      "envVars": [
+        "HAPANA_EMAIL",
+        "HAPANA_PASSWORD"
+      ],
+      "accountCount": 142
+    },
+    "dashboard": {
+      "widgets": [
+        "Active Clients",
+        "Active Intro Offers",
+        "Booked Utilization",
+        "Revenue",
+        "Schedule",
+        "Task List"
+      ],
+      "activeClientsWidget": [
+        "Intro Offer count",
+        "Active Packages count",
+        "Recurring Billing count",
+        "Total Contact",
+        "Alumni count"
+      ],
+      "introOffersWidget": [
+        "30-day conversion to Membership %",
+        "30-day conversion to Package %"
+      ],
+      "bookedUtilizationWidget": [
+        "Sessions count",
+        "Capacity",
+        "Booked",
+        "Attended (%)",
+        "No Show (%)",
+        "Late Cancel"
+      ],
+      "tabs": [
+        "Snapshot (visible)",
+        "Retail (hidden)"
+      ],
+      "notes": "Stats are blurred by default \u2014 click 'Show stats' button to reveal."
+    },
+    "schedule": {
+      "url": "/index.php?route=dashboard/schedule",
+      "views": [
+        "Today",
+        "Month",
+        "Week (default)",
+        "Day"
+      ],
+      "classEntry": "{Class Name} {Time} {Instructor Name} ({booked}/{capacity}) [{waitlist}][{Room Name}]",
+      "classTypes": [
+        "STRONG Body",
+        "STRONG Loaded",
+        "STRONG Pilates",
+        "STRONG RUN CLUB",
+        "STRONG 360",
+        "Active Recovery"
+      ]
+    },
+    "publicApi": {
+      "baseUrl": "https://core.hapana.com/v2/",
+      "auth": "X-Api-Key: {HAPANA_API_KEY}",
+      "docsUrl": "https://apidocs.hapana.com/login",
+      "credentialsLocation": "~/00. Claude Projects/05. STRONG Pilates/04. STRONG HQ - Core API/.env",
+      "clientApis": [
+        {
+          "method": "POST",
+          "endpoint": "addClient",
+          "description": "Create new client"
+        },
+        {
+          "method": "POST",
+          "endpoint": "allocatePackage",
+          "description": "Assign package to client"
+        },
+        {
+          "method": "POST",
+          "endpoint": "accountCredit",
+          "description": "Add credit to account"
+        },
+        {
+          "method": "POST",
+          "endpoint": "generalCheckin",
+          "description": "Record general check-in"
+        },
+        {
+          "method": "POST",
+          "endpoint": "updateClient",
+          "description": "Update client info"
+        },
+        {
+          "method": "GET",
+          "endpoint": "futureBookings",
+          "description": "Upcoming bookings by date + client"
+        },
+        {
+          "method": "GET",
+          "endpoint": "corporate/purchases",
+          "description": "Corporate purchases"
+        },
+        {
+          "method": "GET",
+          "endpoint": "client/purchases",
+          "description": "All purchases for a client"
+        },
+        {
+          "method": "GET",
+          "endpoint": "client",
+          "description": "Lookup by email, phone, or barcode"
+        },
+        {
+          "method": "GET",
+          "endpoint": "registerFields",
+          "description": "Registration field list"
+        },
+        {
+          "method": "GET",
+          "endpoint": "visitHistory",
+          "description": "Historical visits/check-ins"
+        }
+      ],
+      "notificationApis": [
+        {
+          "method": "POST",
+          "endpoint": "pushnotification/send",
+          "description": "Send mobile push notification"
+        }
+      ],
+      "siteApis": [
+        {
+          "method": "GET",
+          "endpoint": "site",
+          "description": "List all sites"
+        },
+        {
+          "method": "GET",
+          "endpoint": "site/detail",
+          "description": "Full site information"
+        },
+        {
+          "method": "GET",
+          "endpoint": "site/packages",
+          "description": "Package offerings for a site"
+        },
+        {
+          "method": "GET",
+          "endpoint": "site/instructor",
+          "description": "Instructors for a site"
+        },
+        {
+          "method": "GET",
+          "endpoint": "site/sessions",
+          "description": "Session times and details"
+        },
+        {
+          "method": "GET",
+          "endpoint": "site/sessionDetail",
+          "description": "Specific session details"
+        }
+      ]
+    }
+  },
+  "coreGrowSync": {
+    "direction": "Core \u2192 Grow (one-directional)",
+    "syncNotes": "Sync is NOT instant \u2014 can be hours. During high-traffic periods (campaigns, openings), longer delays. Manual edits in Grow get overwritten on next sync.",
+    "managedTags": [
+      "classpass",
+      "account created",
+      "migrated"
+    ],
+    "fields": [
+      {
+        "name": "First Name",
+        "customField": "",
+        "definition": "Contact\u2019s first name",
+        "observations": "",
+        "synced": false
+      },
+      {
+        "name": "Last Name",
+        "customField": "",
+        "definition": "Contact\u2019s last name",
+        "observations": "",
+        "synced": false
+      },
+      {
+        "name": "Email",
+        "customField": "",
+        "definition": "Contact\u2019s e-mail",
+        "observations": "The e-mail address is unique across the location",
+        "synced": false
+      },
+      {
+        "name": "Phone",
+        "customField": "",
+        "definition": "Contact\u2019s phone number",
+        "observations": "Only syncs validated phone numbers  Phone numbers are unique across the location  Won\u2019t sync the phone field if the conditions above are not satisfied",
+        "synced": false
+      },
+      {
+        "name": "Date Of Birth",
+        "customField": "",
+        "definition": "Contact\u2019s birthday",
+        "observations": "",
+        "synced": false
+      },
+      {
+        "name": "Contact Source",
+        "customField": "",
+        "definition": "Reserved to Opportunities",
+        "observations": "",
+        "synced": false
+      },
+      {
+        "name": "Contact Type",
+        "customField": "",
+        "definition": "Type of the contact",
+        "observations": "grow-sync service syncs with the fixed value customer  All contacts synced with grow-sync service are existing clients in Core, so if the contact type was lead in Grow before, it will become customer after the service starts syncing it.",
+        "synced": false
+      },
+      {
+        "name": "Street Address",
+        "customField": "",
+        "definition": "Contact\u2019s street address",
+        "observations": "May hold the contact\u2019s complete address depending on the location",
+        "synced": false
+      },
+      {
+        "name": "City",
+        "customField": "",
+        "definition": "Contact\u2019s city",
+        "observations": "",
+        "synced": false
+      },
+      {
+        "name": "State",
+        "customField": "",
+        "definition": "Contact\u2019s state",
+        "observations": "",
+        "synced": false
+      },
+      {
+        "name": "Country",
+        "customField": "",
+        "definition": "Contact\u2019s country",
+        "observations": "",
+        "synced": false
+      },
+      {
+        "name": "Postal Code",
+        "customField": "",
+        "definition": "Contact\u2019s postal code",
+        "observations": "",
+        "synced": false
+      },
+      {
+        "name": "DND Text Messages",
+        "customField": "",
+        "definition": "Contact\u2019s Do Not Disturb option for SMS",
+        "observations": "Compliant with Permanent DND Grow settings, not trying to sync permanent opt-outs",
+        "synced": false
+      },
+      {
+        "name": "DND Emails",
+        "customField": "",
+        "definition": "Contact\u2019s Do Not Disturb option for E-mail",
+        "observations": "Compliant with Permanent DND Grow settings, not trying to sync permanent opt-outs",
+        "synced": false
+      },
+      {
+        "name": "DND all channels",
+        "customField": "",
+        "definition": "Contact\u2019s general Do Not Disturb option",
+        "observations": "Checked when DND Text Messages and DND Emails are marked",
+        "synced": false
+      },
+      {
+        "name": "Core Status",
+        "customField": "contact.core_status",
+        "definition": "Contact\u2019s status, according to the location",
+        "observations": "Possible values: Client  Alumni  Removed",
+        "synced": true
+      },
+      {
+        "name": "Past Active Packages",
+        "customField": "contact.past_active_packages",
+        "definition": "Every package ever registered for the Contact that is not currently active for the location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Active Package",
+        "customField": "contact.active_package",
+        "definition": "Every currently active package from the Contact for the location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Active Package Category",
+        "customField": "contact.active_package_category",
+        "definition": "Every package category from the contact\u2019s currently active packages for the location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Join Date",
+        "customField": "contact.join_date",
+        "definition": "Date the contact has joined the location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "First Attendance Date",
+        "customField": "contact.first_attendance_date",
+        "definition": "Contact\u2019s first visit date to the location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Intro Offer",
+        "customField": "contact.intro_offer",
+        "definition": "Marks if the contact has already claimed the intro offer to the location",
+        "observations": "Possible values: claimed  pending   Once set to claimed, won't change back",
+        "synced": true
+      },
+      {
+        "name": "Corporate Status",
+        "customField": "contact.corporate_status",
+        "definition": "Contact\u2019s status on corporate level",
+        "observations": "\u00b2 Given the scope of the information, this field is updated by the HQ Flow. So there might be a delay in syncing a change, depending on when the HQ flow is scheduled.  Possible values: suspendedMembership  activePackage  introOffer  inactive  accountCreated",
+        "synced": true
+      },
+      {
+        "name": "Anniversary",
+        "customField": "contact.anniversary",
+        "definition": "Number of years since the Join Date",
+        "observations": "Complete years",
+        "synced": true
+      },
+      {
+        "name": "Days Absent",
+        "customField": "contact.days_absent",
+        "definition": "(Milestone) Number of days since the last session date",
+        "observations": "0 if there's a future booking  Possible values: 0, 1, \u2026, 29, 30, 45, 60, 90, 120",
+        "synced": true
+      },
+      {
+        "name": "Days Inactive",
+        "customField": "contact.days_inactive",
+        "definition": "(Milestone) Number of days since: The last date since the contact used a credit in the location  If never, the last date since the contact purchased a package in the location  If never, the Join Date",
+        "observations": "0 if there's a future booking  Possible values: 0, 1, 7, 15, 30, 45, 60, 90, 180, 365, 730, 1095",
+        "synced": true
+      },
+      {
+        "name": "Late Cancel Accrual",
+        "customField": "contact.late_cancel",
+        "definition": "(Milestone) Number of times the contact was absent due to Late Cancel since the last attendance date in the location",
+        "observations": "Possible values: 0, 1, 2, 3 If there is a future booking, a session that is booked but not attended to, this number will always be 0 even if the user late canceled or was a not show on the last sessions.",
+        "synced": true
+      },
+      {
+        "name": "No Show Accrual",
+        "customField": "contact.no_show",
+        "definition": "(Milestone) Number of times the contact was absent due to No Show since the last attendance date in the location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Late Cancel No Show Accrual",
+        "customField": "contact.late_cancel_no_show",
+        "definition": "(Milestone) Sum of the fields Late Cancel Accrual and No Show Accrual",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Home Location",
+        "customField": "contact.home_location",
+        "definition": "Contact\u2019s home location(s), based on the corresponding active packages.",
+        "observations": "A home location is any location a contact has active package(s)  Contacts without active packages will keep the home location empty  Suspended packages also count for the home location list  A contact may have more than one home location.",
+        "synced": true
+      },
+      {
+        "name": "Attendance Total",
+        "customField": "contact.attendance_total",
+        "definition": "Number of times a contact has checked-in to the location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Corporate Attendance",
+        "customField": "contact.corporate_attendance",
+        "definition": "Number of times a contact has checked-in to every location of the brand",
+        "observations": "\u00b3 Given the scope of the information, this field is updated by the HQ Flow. So there might be a delay in syncing a change, depending on when the HQ flow is scheduled. However, contacts that are new to the location will early update this field once to enable faster workflows on Grow.",
+        "synced": true
+      },
+      {
+        "name": "Location Status",
+        "customField": "contact.location_status",
+        "definition": "Contact\u2019s status on location level  The logic to determine the Location Status goes in the following order: For that Client, is every active package an intro offer? If yes: introOffer  Does it have any suspended packages? If yes: suspendedMembership  Does it have any active package? If yes: activePackage  Does past packages contain anything? If yes: inactive  If none of the above conditions (in order) are met, then: accountCreated",
+        "observations": "Possible values: suspendedMembership  activePackage  introOffer  inactive  accountCreated",
+        "synced": true
+      },
+      {
+        "name": "First Booking",
+        "customField": "contact.first_booking",
+        "definition": "Contact\u2019s flag to indicate if any booking was already registered, based on the First Booking Date",
+        "observations": "Possible values: booked  pending   Once set to booked, won't change back",
+        "synced": true
+      },
+      {
+        "name": "First Booking Status",
+        "customField": "contact.first_booking_status",
+        "definition": "Contact\u2019s flag to indicate if any booking was already registered Logic: Client never booked a class (Fist Booking Date is null) or the booking still has the status as \u201cPending\u201d - pending  Client has a First Session Date set - attended  First Booking Date is set and It is not attended, cancelled or no show - booked  First Booking Date is set and It is attended - attended  First Booking Date is set and it\u2019s either No Show or Late Cancel - late cancel no show  First Booking Date is set: it was Cancelled - cancelled  First Attendance is null - cancelled  There is no booking in the future - cancelled   First Booking Date is set: it was Cancelled / No Show - rebooked  First Attendance is null - rebooked  There is a booking in the future - rebooked   First Booking Date is set: it was Cancelled - attended  First Attendance is Set - attended",
+        "observations": "Possible values: pending  booked  rebooked  attended  late cancel no show  cancelled   To handle eventual delays on the trainer side to set the client\u2019s attendance mark, we consider a tolerance of 8 hours before setting late cancel no show. Still, as soon as the session is marked attended, the values is resolved to attended",
+        "synced": true
+      },
+      {
+        "name": "First Booking Date",
+        "customField": "contact.first_booking_date",
+        "definition": "Contact\u2019s first booking date in the location",
+        "observations": "The status of the session doesn\u2019t matter, even if it was cancelled",
+        "synced": true
+      },
+      {
+        "name": "Promo Codes Used",
+        "customField": "contact.promo_codes_used",
+        "definition": "List of every coupon code the contact has ever used in the location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Referrals",
+        "customField": "contact.referrals",
+        "definition": "Number of times the contact was referred by other clients of the same location",
+        "observations": "",
+        "synced": true
+      },
+      {
+        "name": "Core Source",
+        "customField": "contact.core_source",
+        "definition": "Through which medium the contact met the brand",
+        "observations": "Lead source from oc_customer.lead_source",
+        "synced": true
+      },
+      {
+        "name": "Email Opt In",
+        "customField": "contact.email_opt_in",
+        "definition": "Contact\u2019s opt in/out for email",
+        "observations": "Possible values: Opt In  Opt Out",
+        "synced": true
+      },
+      {
+        "name": "SMS Opt In",
+        "customField": "contact.sms_opt_in",
+        "definition": "Contact\u2019s opt in/out for SMS",
+        "observations": "Possible values: Opt In  Opt Out",
+        "synced": true
+      },
+      {
+        "name": "Tags",
+        "customField": "",
+        "definition": "Contact\u2019s tags managed by grow-sync service for the location",
+        "observations": "Tags not managed by grow-sync service won't be altered by it  See more in the Tags Section",
+        "synced": false
+      },
+      {
+        "name": "List of all tags managed by grow-sync service:",
+        "customField": "",
+        "definition": "",
+        "observations": "",
+        "synced": ""
+      },
+      {
+        "name": "classpass",
+        "customField": "",
+        "definition": "",
+        "observations": "",
+        "synced": ""
+      },
+      {
+        "name": "account created",
+        "customField": "",
+        "definition": "",
+        "observations": "",
+        "synced": ""
+      },
+      {
+        "name": "migrated",
+        "customField": "",
+        "definition": "",
+        "observations": "",
+        "synced": ""
+      }
+    ]
+  }
+}

@@ -1,0 +1,185 @@
+<h2>What is Core?</h2>
+
+<p>Hapana Core (<code>core.hapana.com</code>) is the member management platform used by STRONG Pilates. It handles client records, session scheduling, package and membership management, payments, and reporting across all 142 STRONG locations. After logging in, Core presents an Account Picker — select a location to load that studio's dashboard.</p>
+
+<p><strong>Read-only principle:</strong> We never edit, create, or update contacts directly in Core. Core is the source of truth; changes flow one-way into Grow via the Core-to-Grow sync.</p>
+
+<p><strong>Client IDs are base64-encoded.</strong> The numeric ID (e.g., <code>3076262</code>) is encoded as <code>MzA3NjI2Mg==</code> in URLs. You can decode with <code>echo 'MzA3NjI2Mg==' | base64 -d</code>.</p>
+
+<hr>
+
+<h2>Finding a Contact</h2>
+
+<p>The Clients page is at <code>/index.php?route=dashboard/clients</code>. There are two search methods and two critical filter traps.</p>
+
+<h3>Quick Search Bar</h3>
+
+<p>The full-width input at the top of the client table (<code>#clientsearch</code>) searches by Name, Email, Barcode, or Phone. It has a <strong>1500ms debounce</strong> — after you stop typing, it fires an AJAX reload of the table. The value gets copied to hidden field <code>#clientnamesearch</code>, then <code>#updatelist</code> (the hidden Filter button) is triggered.</p>
+
+<h3>Advanced Filter Bar</h3>
+
+<p>Below the search bar, columns can be filtered via a dropdown selector (<code>parent_selection[]</code>) with options: First Name, Last Name, Gender, Birth Month, Age, Email, Phone, Client Status. Match types: contains, begins with, ends with, is.</p>
+
+<h3>The Alumni Status Gotcha</h3>
+
+<p>The status filter (<code>#filter_status</code>) defaults to <strong>Active Clients</strong>. A contact who cancelled their membership is an <strong>Alumni</strong>, not Active. <strong>You will not find them unless you switch the filter to Alumni Clients.</strong></p>
+
+<p>Status filter options: Active Clients, Alumni Clients, Removed Clients, Deleted Clients.</p>
+
+<h3>Corporate Client LookUp</h3>
+
+<p>The <strong>Corporate Client LookUp</strong> button (<code>#corpClientLookup_btn</code>) toggles to a second DataTable (<code>#clientLookupTable</code>) that searches across <strong>all locations</strong> in the account. Use this when you know the person exists in Core but don't know which location they're at. Click "Back" to return to the single-location view.</p>
+
+<h3>Direct URL (if you have the client ID)</h3>
+
+<p>If you already have the base64-encoded client ID, go directly:</p>
+<code>/index.php?route=dashboard/clients/assessment&amp;cid={BASE64_CLIENT_ID}</code>
+
+<p>Via API (read-only): <code>GET /v2/customer/client?email={email}</code> or <code>?phone={phone}</code> or <code>?barcode={barcode}</code>.</p>
+
+<hr>
+
+<h2>Sessions vs Packages — The "Show Visits" Trick</h2>
+
+<p>The most common confusion in Core: <strong>the Past Sessions view does NOT show which package paid for each session.</strong> It only shows "Paid by credits" without identifying the source package.</p>
+
+<p><strong>The answer is on the Packages section, not the Sessions section.</strong></p>
+
+<p>Every package (active or archived) has two links:</p>
+
+<ul>
+  <li><strong>"Show Visits"</strong> (<code>pkgcreditsbookinghistory</code>) — Shows every session consumed from that specific package with columns: S.N, Booking Date Time, Description (class name + date/time), Location Of Use (Home/Away), Credits Used/Refunded, Status (Attended/Cancelled/Late Cancel/No Show)</li>
+  <li><strong>"View History"</strong> (<code>pkgpaymentdetails</code>) — Shows the payment/billing history for that specific package</li>
+</ul>
+
+<h3>How to Trace Sessions for a Package</h3>
+
+<ol>
+  <li>Go to the client detail page</li>
+  <li>Look at the <strong>Active Packages</strong> section — or click <strong>Archived Packages</strong> to see past/expired packages (intro offers, expired class packs, past memberships)</li>
+  <li>Each package shows: Package Name, Credit Limit, valid for {type} valid until {date}, and credit counts (Available/Booked/Used)</li>
+  <li>Click <strong>"Show Visits"</strong> on the target package — this is the definitive list of sessions consumed under that package</li>
+</ol>
+
+<p><strong>For intro offers specifically:</strong> The intro offer package will be in Archived Packages if it's expired. Click "Archived Packages" to find it.</p>
+
+<p><strong>For free classes:</strong> Look for $0.00 packages (e.g., "Friend Free STRONG Class") in either active or archived. "Show Visits" works the same way.</p>
+
+<p>The session view dropdown (<code>#client-schedules</code>) has 4 options: Booked Sessions, Past Sessions, Cancelled Sessions, Schedule Activity Stream. All require a date range (<code>#schedule_date_from</code> / <code>#schedule_date_to</code>) and clicking the <code>#filer_client_schedule</code> button (note: "filer", not "filter" — this is misspelled in the source). Default range is ~60 days back.</p>
+
+<hr>
+
+<h2>Reports That Look Similar But Need Different Filters</h2>
+
+<p>Three groups of near-identical reports that differ by what transactions or statuses they include. Getting these wrong means missing data.</p>
+
+<h3>Group A: Revenue Transaction Reports</h3>
+
+<p>Three reports, same columns, different scope:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Report</th>
+      <th>Filter Name</th>
+      <th>What It Shows</th>
+      <th>What It Excludes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Net Revenue Detail</td>
+      <td><code>getNetRevenueDetail</code></td>
+      <td>Completed/settled transactions only</td>
+      <td>In-processing and failed transactions</td>
+    </tr>
+    <tr>
+      <td>Net Revenue + In Processing</td>
+      <td><code>getAllNetRevenueDetail2</code></td>
+      <td>Completed + in-processing transactions</td>
+      <td>Failed transactions only</td>
+    </tr>
+    <tr>
+      <td>All Invoices Report</td>
+      <td><code>getAllTransactionsReport</code></td>
+      <td>Every invoice created in date range</td>
+      <td>Nothing — shows current status of each</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>All three share the same columns: S.No, Full Name, Email, Payment Method, Invoice Date, Transaction Category, Description, Transaction Id, Processed By, Sale Referred By, Payment Date, Payment Status, Admin Fee, Failed Payment Fee, Transaction Fee, Tax, Discount, Gross Revenue, Revenue Type, Net Revenue.</p>
+
+<p><strong>Payment Status values:</strong> Revenue, Refund, In Processing, Failed, Partially Refunded.</p>
+<p><strong>Revenue Type values:</strong> Session Package, Membership, No Show Fee, Late Cancel Fee, POS, Gift Card.</p>
+
+<p><strong>When to use which:</strong> Use "Net Revenue Detail" for clean revenue numbers. Use "All Invoices" when investigating a specific transaction's current status (a refunded transaction may show as "Revenue" in Net Revenue Detail but "Refund" in All Invoices if refunded after the reporting date). Use "Net Revenue + In Processing" when you need to include pending payments.</p>
+
+<h3>Group B: Membership Status Reports</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Report</th>
+      <th>Filter Name</th>
+      <th>Default View</th>
+      <th>What You Miss Without Filter Changes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Membership Details</td>
+      <td><code>getMembershipDetails</code></td>
+      <td>Active only</td>
+      <td>Pending, Suspended, Cancelled, Complete, Scheduled, Partially Refunded</td>
+    </tr>
+    <tr>
+      <td>Client on Memberships</td>
+      <td><code>getactivemembershippkgs</code></td>
+      <td>Active only</td>
+      <td>Same — cancelled/suspended members are invisible</td>
+    </tr>
+    <tr>
+      <td>Client Not On Membership</td>
+      <td><code>getnonactivemembershippkgs</code></td>
+      <td>Not on active membership</td>
+      <td>Clients on suspended/pending memberships appear here even though they technically have one</td>
+    </tr>
+    <tr>
+      <td>Cancellation Report</td>
+      <td><code>cancelledMemberships</code></td>
+      <td>Cancelled only</td>
+      <td>Active/suspended/pending members</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Membership Details is the most complete report.</strong> It has a Membership Status filter with checkboxes: Active, Pending, Suspended, Cancelled, Complete, Scheduled, Partially Refunded. <strong>You must check all statuses to get the full picture.</strong> The default "Active" view misses anyone who cancelled, suspended, or completed their membership.</p>
+
+<p>Membership Details columns: S.No, Full Name, Email, Phone, Address, Postal Code, Member Created Date, Package Name, Package Type, Package Category, Package Price, Package Status, Date Sold, Intro Offer Purchase Date, Auto Renew, Auto Renew Date, Expiry Date, Completed Date, Last Payment Date, Last Payment Amount, Next Payment Date, Next Payment Amount, Member Inactive Date, Cancel Date, Cancellation Reason.</p>
+
+<h3>Group C: Payment Failure Reports</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Report</th>
+      <th>Filter Name</th>
+      <th>What It Shows</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Failed Payments</td>
+      <td><code>paymentfailed</code></td>
+      <td>Failed payments still pending (unresolved)</td>
+    </tr>
+    <tr>
+      <td>Failed Payment History</td>
+      <td><code>paymentfailedhistory</code></td>
+      <td>All failed payments with their current status (may now be resolved)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Same concept as Group A: one shows the current unresolved problem, the other shows the full history including resolved failures.</p>
