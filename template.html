@@ -184,6 +184,8 @@
   .guide li { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin: 4px 0; }
   .guide strong { color: var(--text); font-weight: 500; }
   .guide code { font-family: var(--mono); font-size: 12px; color: var(--purple); background: rgba(188,140,255,0.08); padding: 1px 5px; border-radius: 3px; }
+  .guide img, .section-screenshot { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .screenshot-caption { font-size: 11px; color: var(--text-dim); text-align: center; margin: -8px 0 16px; font-style: italic; }
 
   @media (max-width: 768px) { .sidebar { display: none; } .toolbar { flex-wrap: wrap; } .guide { padding: 16px; } }
 </style>
@@ -597,6 +599,9 @@ function rPayments(){
   document.getElementById('rc').textContent='';
   var html='';
 
+  // Screenshot banner
+  html+='<div style="padding:16px 20px;border-bottom:1px solid var(--border)"><img class="section-screenshot" src="screenshots/payments-dashboard.png" alt="Payments Dashboard" style="width:100%" /><div class="screenshot-caption">The Payments & Retail dashboard</div></div>';
+
   // Retail Dashboard
   if(pay.retailDashboard){
     var rd=pay.retailDashboard;
@@ -630,6 +635,7 @@ function rPayments(){
   if(pay.retailConfig){
     var rc2=pay.retailConfig;
     html+='<div id="pay-config" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Retail Configurations</span></div></div>';
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><img class="section-screenshot" src="screenshots/retail-configurations.png" alt="Retail Configurations" style="width:100%" /><div class="screenshot-caption">Retail Configurations showing package management</div></div>';
     html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(rc2.url)+'</div></div>';
 
     // Sub-tabs
@@ -679,6 +685,9 @@ function rSettings(){
   var c=document.getElementById('ct');
   document.getElementById('rc').textContent='';
   var html='';
+
+  // Screenshot banner
+  html+='<div style="padding:16px 20px;border-bottom:1px solid var(--border)"><img class="section-screenshot" src="screenshots/settings-configuration.png" alt="Settings Configuration" style="width:100%" /><div class="screenshot-caption">The Settings & Configuration panel</div></div>';
 
   // Account Settings
   if(sett.accountSettings){

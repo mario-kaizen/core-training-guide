@@ -1,5 +1,5 @@
 {
-  "guide": "<h2>What is Core?</h2>\n\n<p>Hapana Core (<code>core.hapana.com</code>) is the member management platform used by STRONG Pilates. It handles client records, session scheduling, package and membership management, payments, and reporting across all 142 STRONG locations. After logging in, Core presents an Account Picker \u2014 select a location to load that studio's dashboard.</p>\n\n<p><strong>Read-only principle:</strong> We never edit, create, or update contacts directly in Core. Core is the source of truth; changes flow one-way into Grow via the Core-to-Grow sync.</p>\n\n<p><strong>Client IDs are base64-encoded.</strong> The numeric ID (e.g., <code>3076262</code>) is encoded as <code>MzA3NjI2Mg==</code> in URLs. You can decode with <code>echo 'MzA3NjI2Mg==' | base64 -d</code>.</p>\n\n<hr>\n\n<h2>Finding a Contact</h2>\n\n<p>The Clients page is at <code>/index.php?route=dashboard/clients</code>. There are two search methods and two critical filter traps.</p>\n\n<h3>Quick Search Bar</h3>\n\n<p>The full-width input at the top of the client table (<code>#clientsearch</code>) searches by Name, Email, Barcode, or Phone. It has a <strong>1500ms debounce</strong> \u2014 after you stop typing, it fires an AJAX reload of the table. The value gets copied to hidden field <code>#clientnamesearch</code>, then <code>#updatelist</code> (the hidden Filter button) is triggered.</p>\n\n<h3>Advanced Filter Bar</h3>\n\n<p>Below the search bar, columns can be filtered via a dropdown selector (<code>parent_selection[]</code>) with options: First Name, Last Name, Gender, Birth Month, Age, Email, Phone, Client Status. Match types: contains, begins with, ends with, is.</p>\n\n<h3>The Alumni Status Gotcha</h3>\n\n<p>The status filter (<code>#filter_status</code>) defaults to <strong>Active Clients</strong>. A contact who cancelled their membership is an <strong>Alumni</strong>, not Active. <strong>You will not find them unless you switch the filter to Alumni Clients.</strong></p>\n\n<p>Status filter options: Active Clients, Alumni Clients, Removed Clients, Deleted Clients.</p>\n\n<h3>Corporate Client LookUp</h3>\n\n<p>The <strong>Corporate Client LookUp</strong> button (<code>#corpClientLookup_btn</code>) toggles to a second DataTable (<code>#clientLookupTable</code>) that searches across <strong>all locations</strong> in the account. Use this when you know the person exists in Core but don't know which location they're at. Click \"Back\" to return to the single-location view.</p>\n\n<h3>Direct URL (if you have the client ID)</h3>\n\n<p>If you already have the base64-encoded client ID, go directly:</p>\n<code>/index.php?route=dashboard/clients/assessment&amp;cid={BASE64_CLIENT_ID}</code>\n\n<p>Via API (read-only): <code>GET /v2/customer/client?email={email}</code> or <code>?phone={phone}</code> or <code>?barcode={barcode}</code>.</p>\n\n<hr>\n\n<h2>Sessions vs Packages \u2014 The \"Show Visits\" Trick</h2>\n\n<p>The most common confusion in Core: <strong>the Past Sessions view does NOT show which package paid for each session.</strong> It only shows \"Paid by credits\" without identifying the source package.</p>\n\n<p><strong>The answer is on the Packages section, not the Sessions section.</strong></p>\n\n<p>Every package (active or archived) has two links:</p>\n\n<ul>\n  <li><strong>\"Show Visits\"</strong> (<code>pkgcreditsbookinghistory</code>) \u2014 Shows every session consumed from that specific package with columns: S.N, Booking Date Time, Description (class name + date/time), Location Of Use (Home/Away), Credits Used/Refunded, Status (Attended/Cancelled/Late Cancel/No Show)</li>\n  <li><strong>\"View History\"</strong> (<code>pkgpaymentdetails</code>) \u2014 Shows the payment/billing history for that specific package</li>\n</ul>\n\n<h3>How to Trace Sessions for a Package</h3>\n\n<ol>\n  <li>Go to the client detail page</li>\n  <li>Look at the <strong>Active Packages</strong> section \u2014 or click <strong>Archived Packages</strong> to see past/expired packages (intro offers, expired class packs, past memberships)</li>\n  <li>Each package shows: Package Name, Credit Limit, valid for {type} valid until {date}, and credit counts (Available/Booked/Used)</li>\n  <li>Click <strong>\"Show Visits\"</strong> on the target package \u2014 this is the definitive list of sessions consumed under that package</li>\n</ol>\n\n<p><strong>For intro offers specifically:</strong> The intro offer package will be in Archived Packages if it's expired. Click \"Archived Packages\" to find it.</p>\n\n<p><strong>For free classes:</strong> Look for $0.00 packages (e.g., \"Friend Free STRONG Class\") in either active or archived. \"Show Visits\" works the same way.</p>\n\n<p>The session view dropdown (<code>#client-schedules</code>) has 4 options: Booked Sessions, Past Sessions, Cancelled Sessions, Schedule Activity Stream. All require a date range (<code>#schedule_date_from</code> / <code>#schedule_date_to</code>) and clicking the <code>#filer_client_schedule</code> button (note: \"filer\", not \"filter\" \u2014 this is misspelled in the source). Default range is ~60 days back.</p>\n\n<hr>\n\n<h2>Reports That Look Similar But Need Different Filters</h2>\n\n<p>Three groups of near-identical reports that differ by what transactions or statuses they include. Getting these wrong means missing data.</p>\n\n<h3>Group A: Revenue Transaction Reports</h3>\n\n<p>Three reports, same columns, different scope:</p>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>What It Shows</th>\n      <th>What It Excludes</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Net Revenue Detail</td>\n      <td><code>getNetRevenueDetail</code></td>\n      <td>Completed/settled transactions only</td>\n      <td>In-processing and failed transactions</td>\n    </tr>\n    <tr>\n      <td>Net Revenue + In Processing</td>\n      <td><code>getAllNetRevenueDetail2</code></td>\n      <td>Completed + in-processing transactions</td>\n      <td>Failed transactions only</td>\n    </tr>\n    <tr>\n      <td>All Invoices Report</td>\n      <td><code>getAllTransactionsReport</code></td>\n      <td>Every invoice created in date range</td>\n      <td>Nothing \u2014 shows current status of each</td>\n    </tr>\n  </tbody>\n</table>\n\n<p>All three share the same columns: S.No, Full Name, Email, Payment Method, Invoice Date, Transaction Category, Description, Transaction Id, Processed By, Sale Referred By, Payment Date, Payment Status, Admin Fee, Failed Payment Fee, Transaction Fee, Tax, Discount, Gross Revenue, Revenue Type, Net Revenue.</p>\n\n<p><strong>Payment Status values:</strong> Revenue, Refund, In Processing, Failed, Partially Refunded.</p>\n<p><strong>Revenue Type values:</strong> Session Package, Membership, No Show Fee, Late Cancel Fee, POS, Gift Card.</p>\n\n<p><strong>When to use which:</strong> Use \"Net Revenue Detail\" for clean revenue numbers. Use \"All Invoices\" when investigating a specific transaction's current status (a refunded transaction may show as \"Revenue\" in Net Revenue Detail but \"Refund\" in All Invoices if refunded after the reporting date). Use \"Net Revenue + In Processing\" when you need to include pending payments.</p>\n\n<h3>Group B: Membership Status Reports</h3>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>Default View</th>\n      <th>What You Miss Without Filter Changes</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Membership Details</td>\n      <td><code>getMembershipDetails</code></td>\n      <td>Active only</td>\n      <td>Pending, Suspended, Cancelled, Complete, Scheduled, Partially Refunded</td>\n    </tr>\n    <tr>\n      <td>Client on Memberships</td>\n      <td><code>getactivemembershippkgs</code></td>\n      <td>Active only</td>\n      <td>Same \u2014 cancelled/suspended members are invisible</td>\n    </tr>\n    <tr>\n      <td>Client Not On Membership</td>\n      <td><code>getnonactivemembershippkgs</code></td>\n      <td>Not on active membership</td>\n      <td>Clients on suspended/pending memberships appear here even though they technically have one</td>\n    </tr>\n    <tr>\n      <td>Cancellation Report</td>\n      <td><code>cancelledMemberships</code></td>\n      <td>Cancelled only</td>\n      <td>Active/suspended/pending members</td>\n    </tr>\n  </tbody>\n</table>\n\n<p><strong>Membership Details is the most complete report.</strong> It has a Membership Status filter with checkboxes: Active, Pending, Suspended, Cancelled, Complete, Scheduled, Partially Refunded. <strong>You must check all statuses to get the full picture.</strong> The default \"Active\" view misses anyone who cancelled, suspended, or completed their membership.</p>\n\n<p>Membership Details columns: S.No, Full Name, Email, Phone, Address, Postal Code, Member Created Date, Package Name, Package Type, Package Category, Package Price, Package Status, Date Sold, Intro Offer Purchase Date, Auto Renew, Auto Renew Date, Expiry Date, Completed Date, Last Payment Date, Last Payment Amount, Next Payment Date, Next Payment Amount, Member Inactive Date, Cancel Date, Cancellation Reason.</p>\n\n<h3>Group C: Payment Failure Reports</h3>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>What It Shows</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Failed Payments</td>\n      <td><code>paymentfailed</code></td>\n      <td>Failed payments still pending (unresolved)</td>\n    </tr>\n    <tr>\n      <td>Failed Payment History</td>\n      <td><code>paymentfailedhistory</code></td>\n      <td>All failed payments with their current status (may now be resolved)</td>\n    </tr>\n  </tbody>\n</table>\n\n<p>Same concept as Group A: one shows the current unresolved problem, the other shows the full history including resolved failures.</p>\n",
+  "guide": "<h2>What is Core?</h2>\n\n<p>Hapana Core (<code>core.hapana.com</code>) is the member management platform used by STRONG Pilates. It handles client records, session scheduling, package and membership management, payments, and reporting across all 142 STRONG locations. After logging in, Core presents an Account Picker — select a location to load that studio's dashboard.</p>\n\n<img src=\"screenshots/account-picker.png\" alt=\"Core Account Picker\" />\n<p class=\"screenshot-caption\">The Account Picker — select a STRONG location to load its dashboard</p>\n\n<p><strong>Read-only principle:</strong> We never edit, create, or update contacts directly in Core. Core is the source of truth; changes flow one-way into Grow via the Core-to-Grow sync.</p>\n\n<p><strong>Client IDs are base64-encoded.</strong> The numeric ID (e.g., <code>3076262</code>) is encoded as <code>MzA3NjI2Mg==</code> in URLs. You can decode with <code>echo 'MzA3NjI2Mg==' | base64 -d</code>.</p>\n\n<hr>\n\n<h2>Finding a Contact</h2>\n\n<p>The Clients page is at <code>/index.php?route=dashboard/clients</code>. There are two search methods and two critical filter traps.</p>\n\n<img src=\"screenshots/client-list.png\" alt=\"Core Clients Page\" />\n<p class=\"screenshot-caption\">The Clients page with search bar and filter options</p>\n\n<h3>Quick Search Bar</h3>\n\n<p>The full-width input at the top of the client table (<code>#clientsearch</code>) searches by Name, Email, Barcode, or Phone. It has a <strong>1500ms debounce</strong> — after you stop typing, it fires an AJAX reload of the table. The value gets copied to hidden field <code>#clientnamesearch</code>, then <code>#updatelist</code> (the hidden Filter button) is triggered.</p>\n\n<h3>Advanced Filter Bar</h3>\n\n<p>Below the search bar, columns can be filtered via a dropdown selector (<code>parent_selection[]</code>) with options: First Name, Last Name, Gender, Birth Month, Age, Email, Phone, Client Status. Match types: contains, begins with, ends with, is.</p>\n\n<h3>The Alumni Status Gotcha</h3>\n\n<p>The status filter (<code>#filter_status</code>) defaults to <strong>Active Clients</strong>. A contact who cancelled their membership is an <strong>Alumni</strong>, not Active. <strong>You will not find them unless you switch the filter to Alumni Clients.</strong></p>\n\n<p>Status filter options: Active Clients, Alumni Clients, Removed Clients, Deleted Clients.</p>\n\n<h3>Corporate Client LookUp</h3>\n\n<p>The <strong>Corporate Client LookUp</strong> button (<code>#corpClientLookup_btn</code>) toggles to a second DataTable (<code>#clientLookupTable</code>) that searches across <strong>all locations</strong> in the account. Use this when you know the person exists in Core but don't know which location they're at. Click \"Back\" to return to the single-location view.</p>\n\n<h3>Direct URL (if you have the client ID)</h3>\n\n<p>If you already have the base64-encoded client ID, go directly:</p>\n<code>/index.php?route=dashboard/clients/assessment&amp;cid={BASE64_CLIENT_ID}</code>\n\n<p>Via API (read-only): <code>GET /v2/customer/client?email={email}</code> or <code>?phone={phone}</code> or <code>?barcode={barcode}</code>.</p>\n\n<hr>\n\n<h2>Sessions vs Packages — The \"Show Visits\" Trick</h2>\n\n<p>The most common confusion in Core: <strong>the Past Sessions view does NOT show which package paid for each session.</strong> It only shows \"Paid by credits\" without identifying the source package.</p>\n\n<p><strong>The answer is on the Packages section, not the Sessions section.</strong></p>\n\n<p>Every package (active or archived) has two links:</p>\n\n<ul>\n  <li><strong>\"Show Visits\"</strong> (<code>pkgcreditsbookinghistory</code>) — Shows every session consumed from that specific package with columns: S.N, Booking Date Time, Description (class name + date/time), Location Of Use (Home/Away), Credits Used/Refunded, Status (Attended/Cancelled/Late Cancel/No Show)</li>\n  <li><strong>\"View History\"</strong> (<code>pkgpaymentdetails</code>) — Shows the payment/billing history for that specific package</li>\n</ul>\n\n<h3>How to Trace Sessions for a Package</h3>\n\n<ol>\n  <li>Go to the client detail page</li>\n</ol>\n\n<img src=\"screenshots/client-detail.png\" alt=\"Client Detail Page\" />\n<p class=\"screenshot-caption\">Client detail page showing packages, sessions, and payment tabs</p>\n\n<ol>\n  <li>Look at the <strong>Active Packages</strong> section — or click <strong>Archived Packages</strong> to see past/expired packages (intro offers, expired class packs, past memberships)</li>\n  <li>Each package shows: Package Name, Credit Limit, valid for {type} valid until {date}, and credit counts (Available/Booked/Used)</li>\n  <li>Click <strong>\"Show Visits\"</strong> on the target package — this is the definitive list of sessions consumed under that package</li>\n</ol>\n\n<p><strong>For intro offers specifically:</strong> The intro offer package will be in Archived Packages if it's expired. Click \"Archived Packages\" to find it.</p>\n\n<p><strong>For free classes:</strong> Look for $0.00 packages (e.g., \"Friend Free STRONG Class\") in either active or archived. \"Show Visits\" works the same way.</p>\n\n<p>The session view dropdown (<code>#client-schedules</code>) has 4 options: Booked Sessions, Past Sessions, Cancelled Sessions, Schedule Activity Stream. All require a date range (<code>#schedule_date_from</code> / <code>#schedule_date_to</code>) and clicking the <code>#filer_client_schedule</code> button (note: \"filer\", not \"filter\" — this is misspelled in the source). Default range is ~60 days back.</p>\n\n<hr>\n\n<h2>Reports That Look Similar But Need Different Filters</h2>\n\n<p>Three groups of near-identical reports that differ by what transactions or statuses they include. Getting these wrong means missing data.</p>\n\n<img src=\"screenshots/reports-dashboard.png\" alt=\"Reports Dashboard\" />\n<p class=\"screenshot-caption\">The Reports section with category filters and report cards</p>\n\n<h3>Group A: Revenue Transaction Reports</h3>\n\n<p>Three reports, same columns, different scope:</p>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>What It Shows</th>\n      <th>What It Excludes</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Net Revenue Detail</td>\n      <td><code>getNetRevenueDetail</code></td>\n      <td>Completed/settled transactions only</td>\n      <td>In-processing and failed transactions</td>\n    </tr>\n    <tr>\n      <td>Net Revenue + In Processing</td>\n      <td><code>getAllNetRevenueDetail2</code></td>\n      <td>Completed + in-processing transactions</td>\n      <td>Failed transactions only</td>\n    </tr>\n    <tr>\n      <td>All Invoices Report</td>\n      <td><code>getAllTransactionsReport</code></td>\n      <td>Every invoice created in date range</td>\n      <td>Nothing — shows current status of each</td>\n    </tr>\n  </tbody>\n</table>\n\n<p>All three share the same columns: S.No, Full Name, Email, Payment Method, Invoice Date, Transaction Category, Description, Transaction Id, Processed By, Sale Referred By, Payment Date, Payment Status, Admin Fee, Failed Payment Fee, Transaction Fee, Tax, Discount, Gross Revenue, Revenue Type, Net Revenue.</p>\n\n<p><strong>Payment Status values:</strong> Revenue, Refund, In Processing, Failed, Partially Refunded.</p>\n<p><strong>Revenue Type values:</strong> Session Package, Membership, No Show Fee, Late Cancel Fee, POS, Gift Card.</p>\n\n<p><strong>When to use which:</strong> Use \"Net Revenue Detail\" for clean revenue numbers. Use \"All Invoices\" when investigating a specific transaction's current status (a refunded transaction may show as \"Revenue\" in Net Revenue Detail but \"Refund\" in All Invoices if refunded after the reporting date). Use \"Net Revenue + In Processing\" when you need to include pending payments.</p>\n\n<h3>Group B: Membership Status Reports</h3>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>Default View</th>\n      <th>What You Miss Without Filter Changes</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Membership Details</td>\n      <td><code>getMembershipDetails</code></td>\n      <td>Active only</td>\n      <td>Pending, Suspended, Cancelled, Complete, Scheduled, Partially Refunded</td>\n    </tr>\n    <tr>\n      <td>Client on Memberships</td>\n      <td><code>getactivemembershippkgs</code></td>\n      <td>Active only</td>\n      <td>Same — cancelled/suspended members are invisible</td>\n    </tr>\n    <tr>\n      <td>Client Not On Membership</td>\n      <td><code>getnonactivemembershippkgs</code></td>\n      <td>Not on active membership</td>\n      <td>Clients on suspended/pending memberships appear here even though they technically have one</td>\n    </tr>\n    <tr>\n      <td>Cancellation Report</td>\n      <td><code>cancelledMemberships</code></td>\n      <td>Cancelled only</td>\n      <td>Active/suspended/pending members</td>\n    </tr>\n  </tbody>\n</table>\n\n<p><strong>Membership Details is the most complete report.</strong> It has a Membership Status filter with checkboxes: Active, Pending, Suspended, Cancelled, Complete, Scheduled, Partially Refunded. <strong>You must check all statuses to get the full picture.</strong> The default \"Active\" view misses anyone who cancelled, suspended, or completed their membership.</p>\n\n<p>Membership Details columns: S.No, Full Name, Email, Phone, Address, Postal Code, Member Created Date, Package Name, Package Type, Package Category, Package Price, Package Status, Date Sold, Intro Offer Purchase Date, Auto Renew, Auto Renew Date, Expiry Date, Completed Date, Last Payment Date, Last Payment Amount, Next Payment Date, Next Payment Amount, Member Inactive Date, Cancel Date, Cancellation Reason.</p>\n\n<h3>Group C: Payment Failure Reports</h3>\n\n<table>\n  <thead>\n    <tr>\n      <th>Report</th>\n      <th>Filter Name</th>\n      <th>What It Shows</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Failed Payments</td>\n      <td><code>paymentfailed</code></td>\n      <td>Failed payments still pending (unresolved)</td>\n    </tr>\n    <tr>\n      <td>Failed Payment History</td>\n      <td><code>paymentfailedhistory</code></td>\n      <td>All failed payments with their current status (may now be resolved)</td>\n    </tr>\n  </tbody>\n</table>\n\n<p>Same concept as Group A: one shows the current unresolved problem, the other shows the full history including resolved failures.</p>\n",
   "reports": {
     "categories": [
       {
@@ -267,7 +267,7 @@
           {
             "filterName": "getNetRevenueDetail",
             "title": "Net Revenue Detail",
-            "description": "Net revenue by transaction \u2014 completed/settled only",
+            "description": "Net revenue by transaction — completed/settled only",
             "reportType": "clients"
           },
           {
@@ -279,13 +279,13 @@
           {
             "filterName": "getAllNetRevenueDetail2",
             "title": "Net Revenue + In Processing",
-            "description": "All transactions combined \u2014 completed plus in-processing",
+            "description": "All transactions combined — completed plus in-processing",
             "reportType": "clients"
           },
           {
             "filterName": "getAllTransactionsReport",
             "title": "All Invoices Report",
-            "description": "All invoices in date range with current status \u2014 shows nothing excluded",
+            "description": "All invoices in date range with current status — shows nothing excluded",
             "reportType": "clients"
           },
           {
@@ -363,7 +363,7 @@
           {
             "filterName": "paymentfailedhistory",
             "title": "Failed Payment History",
-            "description": "Failed payment history with current status \u2014 may now be resolved",
+            "description": "Failed payment history with current status — may now be resolved",
             "reportType": "clients"
           },
           {
@@ -552,7 +552,7 @@
     "searchMethods": [
       {
         "name": "Quick Search",
-        "description": "Full-width input at the top of the client table. Searches by Name, Email, Barcode, or Phone. Has a 1500ms debounce \u2014 after you stop typing, it fires an AJAX reload of the table. The value gets copied to hidden field #clientnamesearch, then #updatelist (the hidden Filter button) is triggered.",
+        "description": "Full-width input at the top of the client table. Searches by Name, Email, Barcode, or Phone. Has a 1500ms debounce — after you stop typing, it fires an AJAX reload of the table. The value gets copied to hidden field #clientnamesearch, then #updatelist (the hidden Filter button) is triggered.",
         "selector": "#clientsearch"
       },
       {
@@ -839,7 +839,7 @@
       "paymentTabs": [
         {
           "name": "Payment Log",
-          "description": "Transaction history with filters \u2014 date range, type (All/Single/Membership), status (All/Paid/Refunded)"
+          "description": "Transaction history with filters — date range, type (All/Single/Membership), status (All/Paid/Refunded)"
         },
         {
           "name": "Memberships",
@@ -1031,7 +1031,7 @@
         "1000"
       ],
       "soldOnlineToggle": {
-        "warning": "Always state-check first \u2014 blind-clicking reverses the current state. Clicking toggles state via changepackagestatus endpoint with no explicit on/off param.",
+        "warning": "Always state-check first — blind-clicking reverses the current state. Clicking toggles state via changepackagestatus endpoint with no explicit on/off param.",
         "onState": "fa-check green",
         "offState": "fa-remove red",
         "selector": "span.actonvariableStatus"
@@ -1856,7 +1856,7 @@
     ],
     "accountSwitching": {
       "endpoint": "GET /index.php?route=dashboard/trainer/updateTrainerAccount&customer_id={SITE_ID}",
-      "warning": "Never load directly in browser \u2014 returns plain text 'changed' that bricks the tab's rendering. Always use AJAX (XHR from within a Core page) or via the updateSessionID() JavaScript function on the account picker page.",
+      "warning": "Never load directly in browser — returns plain text 'changed' that bricks the tab's rendering. Always use AJAX (XHR from within a Core page) or via the updateSessionID() JavaScript function on the account picker page.",
       "resetCookies": "Clear siteID, v1Info, PHPSESSID cookies then navigate to https://core.hapana.com/?_=reset",
       "resetScript": "['siteID','v1Info','PHPSESSID'].forEach(function(n){ document.cookie = n + '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'; document.cookie = n + '=; path=/; domain=.hapana.com; expires=Thu, 01 Jan 1970 00:00:00 GMT'; });"
     },
@@ -1901,7 +1901,7 @@
         "Snapshot (visible)",
         "Retail (hidden)"
       ],
-      "notes": "Stats are blurred by default \u2014 click 'Show stats' button to reveal."
+      "notes": "Stats are blurred by default — click 'Show stats' button to reveal."
     },
     "schedule": {
       "url": "/index.php?route=dashboard/schedule",
@@ -2025,8 +2025,8 @@
     }
   },
   "coreGrowSync": {
-    "direction": "Core \u2192 Grow (one-directional)",
-    "syncNotes": "Sync is NOT instant \u2014 can be hours. During high-traffic periods (campaigns, openings), longer delays. Manual edits in Grow get overwritten on next sync.",
+    "direction": "Core → Grow (one-directional)",
+    "syncNotes": "Sync is NOT instant — can be hours. During high-traffic periods (campaigns, openings), longer delays. Manual edits in Grow get overwritten on next sync.",
     "managedTags": [
       "classpass",
       "account created",
@@ -2036,35 +2036,35 @@
       {
         "name": "First Name",
         "customField": "",
-        "definition": "Contact\u2019s first name",
+        "definition": "Contact’s first name",
         "observations": "",
         "synced": false
       },
       {
         "name": "Last Name",
         "customField": "",
-        "definition": "Contact\u2019s last name",
+        "definition": "Contact’s last name",
         "observations": "",
         "synced": false
       },
       {
         "name": "Email",
         "customField": "",
-        "definition": "Contact\u2019s e-mail",
+        "definition": "Contact’s e-mail",
         "observations": "The e-mail address is unique across the location",
         "synced": false
       },
       {
         "name": "Phone",
         "customField": "",
-        "definition": "Contact\u2019s phone number",
-        "observations": "Only syncs validated phone numbers  Phone numbers are unique across the location  Won\u2019t sync the phone field if the conditions above are not satisfied",
+        "definition": "Contact’s phone number",
+        "observations": "Only syncs validated phone numbers  Phone numbers are unique across the location  Won’t sync the phone field if the conditions above are not satisfied",
         "synced": false
       },
       {
         "name": "Date Of Birth",
         "customField": "",
-        "definition": "Contact\u2019s birthday",
+        "definition": "Contact’s birthday",
         "observations": "",
         "synced": false
       },
@@ -2085,63 +2085,63 @@
       {
         "name": "Street Address",
         "customField": "",
-        "definition": "Contact\u2019s street address",
-        "observations": "May hold the contact\u2019s complete address depending on the location",
+        "definition": "Contact’s street address",
+        "observations": "May hold the contact’s complete address depending on the location",
         "synced": false
       },
       {
         "name": "City",
         "customField": "",
-        "definition": "Contact\u2019s city",
+        "definition": "Contact’s city",
         "observations": "",
         "synced": false
       },
       {
         "name": "State",
         "customField": "",
-        "definition": "Contact\u2019s state",
+        "definition": "Contact’s state",
         "observations": "",
         "synced": false
       },
       {
         "name": "Country",
         "customField": "",
-        "definition": "Contact\u2019s country",
+        "definition": "Contact’s country",
         "observations": "",
         "synced": false
       },
       {
         "name": "Postal Code",
         "customField": "",
-        "definition": "Contact\u2019s postal code",
+        "definition": "Contact’s postal code",
         "observations": "",
         "synced": false
       },
       {
         "name": "DND Text Messages",
         "customField": "",
-        "definition": "Contact\u2019s Do Not Disturb option for SMS",
+        "definition": "Contact’s Do Not Disturb option for SMS",
         "observations": "Compliant with Permanent DND Grow settings, not trying to sync permanent opt-outs",
         "synced": false
       },
       {
         "name": "DND Emails",
         "customField": "",
-        "definition": "Contact\u2019s Do Not Disturb option for E-mail",
+        "definition": "Contact’s Do Not Disturb option for E-mail",
         "observations": "Compliant with Permanent DND Grow settings, not trying to sync permanent opt-outs",
         "synced": false
       },
       {
         "name": "DND all channels",
         "customField": "",
-        "definition": "Contact\u2019s general Do Not Disturb option",
+        "definition": "Contact’s general Do Not Disturb option",
         "observations": "Checked when DND Text Messages and DND Emails are marked",
         "synced": false
       },
       {
         "name": "Core Status",
         "customField": "contact.core_status",
-        "definition": "Contact\u2019s status, according to the location",
+        "definition": "Contact’s status, according to the location",
         "observations": "Possible values: Client  Alumni  Removed",
         "synced": true
       },
@@ -2162,7 +2162,7 @@
       {
         "name": "Active Package Category",
         "customField": "contact.active_package_category",
-        "definition": "Every package category from the contact\u2019s currently active packages for the location",
+        "definition": "Every package category from the contact’s currently active packages for the location",
         "observations": "",
         "synced": true
       },
@@ -2176,7 +2176,7 @@
       {
         "name": "First Attendance Date",
         "customField": "contact.first_attendance_date",
-        "definition": "Contact\u2019s first visit date to the location",
+        "definition": "Contact’s first visit date to the location",
         "observations": "",
         "synced": true
       },
@@ -2190,8 +2190,8 @@
       {
         "name": "Corporate Status",
         "customField": "contact.corporate_status",
-        "definition": "Contact\u2019s status on corporate level",
-        "observations": "\u00b2 Given the scope of the information, this field is updated by the HQ Flow. So there might be a delay in syncing a change, depending on when the HQ flow is scheduled.  Possible values: suspendedMembership  activePackage  introOffer  inactive  accountCreated",
+        "definition": "Contact’s status on corporate level",
+        "observations": "² Given the scope of the information, this field is updated by the HQ Flow. So there might be a delay in syncing a change, depending on when the HQ flow is scheduled.  Possible values: suspendedMembership  activePackage  introOffer  inactive  accountCreated",
         "synced": true
       },
       {
@@ -2205,7 +2205,7 @@
         "name": "Days Absent",
         "customField": "contact.days_absent",
         "definition": "(Milestone) Number of days since the last session date",
-        "observations": "0 if there's a future booking  Possible values: 0, 1, \u2026, 29, 30, 45, 60, 90, 120",
+        "observations": "0 if there's a future booking  Possible values: 0, 1, …, 29, 30, 45, 60, 90, 120",
         "synced": true
       },
       {
@@ -2239,7 +2239,7 @@
       {
         "name": "Home Location",
         "customField": "contact.home_location",
-        "definition": "Contact\u2019s home location(s), based on the corresponding active packages.",
+        "definition": "Contact’s home location(s), based on the corresponding active packages.",
         "observations": "A home location is any location a contact has active package(s)  Contacts without active packages will keep the home location empty  Suspended packages also count for the home location list  A contact may have more than one home location.",
         "synced": true
       },
@@ -2254,35 +2254,35 @@
         "name": "Corporate Attendance",
         "customField": "contact.corporate_attendance",
         "definition": "Number of times a contact has checked-in to every location of the brand",
-        "observations": "\u00b3 Given the scope of the information, this field is updated by the HQ Flow. So there might be a delay in syncing a change, depending on when the HQ flow is scheduled. However, contacts that are new to the location will early update this field once to enable faster workflows on Grow.",
+        "observations": "³ Given the scope of the information, this field is updated by the HQ Flow. So there might be a delay in syncing a change, depending on when the HQ flow is scheduled. However, contacts that are new to the location will early update this field once to enable faster workflows on Grow.",
         "synced": true
       },
       {
         "name": "Location Status",
         "customField": "contact.location_status",
-        "definition": "Contact\u2019s status on location level  The logic to determine the Location Status goes in the following order: For that Client, is every active package an intro offer? If yes: introOffer  Does it have any suspended packages? If yes: suspendedMembership  Does it have any active package? If yes: activePackage  Does past packages contain anything? If yes: inactive  If none of the above conditions (in order) are met, then: accountCreated",
+        "definition": "Contact’s status on location level  The logic to determine the Location Status goes in the following order: For that Client, is every active package an intro offer? If yes: introOffer  Does it have any suspended packages? If yes: suspendedMembership  Does it have any active package? If yes: activePackage  Does past packages contain anything? If yes: inactive  If none of the above conditions (in order) are met, then: accountCreated",
         "observations": "Possible values: suspendedMembership  activePackage  introOffer  inactive  accountCreated",
         "synced": true
       },
       {
         "name": "First Booking",
         "customField": "contact.first_booking",
-        "definition": "Contact\u2019s flag to indicate if any booking was already registered, based on the First Booking Date",
+        "definition": "Contact’s flag to indicate if any booking was already registered, based on the First Booking Date",
         "observations": "Possible values: booked  pending   Once set to booked, won't change back",
         "synced": true
       },
       {
         "name": "First Booking Status",
         "customField": "contact.first_booking_status",
-        "definition": "Contact\u2019s flag to indicate if any booking was already registered Logic: Client never booked a class (Fist Booking Date is null) or the booking still has the status as \u201cPending\u201d - pending  Client has a First Session Date set - attended  First Booking Date is set and It is not attended, cancelled or no show - booked  First Booking Date is set and It is attended - attended  First Booking Date is set and it\u2019s either No Show or Late Cancel - late cancel no show  First Booking Date is set: it was Cancelled - cancelled  First Attendance is null - cancelled  There is no booking in the future - cancelled   First Booking Date is set: it was Cancelled / No Show - rebooked  First Attendance is null - rebooked  There is a booking in the future - rebooked   First Booking Date is set: it was Cancelled - attended  First Attendance is Set - attended",
-        "observations": "Possible values: pending  booked  rebooked  attended  late cancel no show  cancelled   To handle eventual delays on the trainer side to set the client\u2019s attendance mark, we consider a tolerance of 8 hours before setting late cancel no show. Still, as soon as the session is marked attended, the values is resolved to attended",
+        "definition": "Contact’s flag to indicate if any booking was already registered Logic: Client never booked a class (Fist Booking Date is null) or the booking still has the status as “Pending” - pending  Client has a First Session Date set - attended  First Booking Date is set and It is not attended, cancelled or no show - booked  First Booking Date is set and It is attended - attended  First Booking Date is set and it’s either No Show or Late Cancel - late cancel no show  First Booking Date is set: it was Cancelled - cancelled  First Attendance is null - cancelled  There is no booking in the future - cancelled   First Booking Date is set: it was Cancelled / No Show - rebooked  First Attendance is null - rebooked  There is a booking in the future - rebooked   First Booking Date is set: it was Cancelled - attended  First Attendance is Set - attended",
+        "observations": "Possible values: pending  booked  rebooked  attended  late cancel no show  cancelled   To handle eventual delays on the trainer side to set the client’s attendance mark, we consider a tolerance of 8 hours before setting late cancel no show. Still, as soon as the session is marked attended, the values is resolved to attended",
         "synced": true
       },
       {
         "name": "First Booking Date",
         "customField": "contact.first_booking_date",
-        "definition": "Contact\u2019s first booking date in the location",
-        "observations": "The status of the session doesn\u2019t matter, even if it was cancelled",
+        "definition": "Contact’s first booking date in the location",
+        "observations": "The status of the session doesn’t matter, even if it was cancelled",
         "synced": true
       },
       {
@@ -2309,21 +2309,21 @@
       {
         "name": "Email Opt In",
         "customField": "contact.email_opt_in",
-        "definition": "Contact\u2019s opt in/out for email",
+        "definition": "Contact’s opt in/out for email",
         "observations": "Possible values: Opt In  Opt Out",
         "synced": true
       },
       {
         "name": "SMS Opt In",
         "customField": "contact.sms_opt_in",
-        "definition": "Contact\u2019s opt in/out for SMS",
+        "definition": "Contact’s opt in/out for SMS",
         "observations": "Possible values: Opt In  Opt Out",
         "synced": true
       },
       {
         "name": "Tags",
         "customField": "",
-        "definition": "Contact\u2019s tags managed by grow-sync service for the location",
+        "definition": "Contact’s tags managed by grow-sync service for the location",
         "observations": "Tags not managed by grow-sync service won't be altered by it  See more in the Tags Section",
         "synced": false
       },
