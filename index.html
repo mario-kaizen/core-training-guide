@@ -781,6 +781,7 @@ function rSettings(){
   if(sett.locationSettings){
     var ls=sett.locationSettings;
     html+='<div id="set-location" style="border-bottom:1px solid var(--border)"><div class="fh"><div class="fp"><span class="ps">Location Settings</span></div><span class="wc">'+(ls.sections?ls.sections.length:0)+' sections</span></div>';
+    html+='<div style="padding:12px 20px;border-bottom:1px solid var(--border)"><img class="section-screenshot" src="screenshots/business-profile.png" alt="Business Profile" style="width:100%" /><div class="screenshot-caption">Business Profile showing location details, hours, and settings sidebar</div></div>';
     if(ls.url){
       html+='<div style="padding:8px 20px;border-bottom:1px solid var(--border)"><div class="dl">URL</div><div class="dt">'+E(ls.url)+'</div></div>';
     }
